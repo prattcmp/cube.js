@@ -14,12 +14,17 @@ import {
   utcToLocalTimeZone,
 } from '@cubejs-backend/shared';
 
-import { cancelCombinator, SaveCancelFn, DriverInterface, BaseDriver,
+import {
+  cancelCombinator,
+  SaveCancelFn,
+  DriverInterface,
+  BaseDriver,
   DownloadTableData,
   InlineTable,
   StreamOptions,
   UnloadOptions,
-  DriverCapabilities } from '@cubejs-backend/base-driver';
+  DriverCapabilities
+} from '@cubejs-backend/base-driver';
 import { Query, QueryCache, QueryTuple, QueryWithParams } from './QueryCache';
 import { ContinueWaitError } from './ContinueWaitError';
 import { DriverFactory, DriverFactoryByDataSource } from './DriverFactory';
@@ -321,7 +326,7 @@ class PreAggregationLoadCache {
   }
 
   public tablesRedisKey(preAggregation: PreAggregationDescription) {
-    return `SQL_PRE_AGGREGATIONS_TABLES_${this.redisPrefix}_${preAggregation.dataSource}${preAggregation.preAggregationsSchema}${preAggregation.external ? '_EXT' : ''}`;
+    return this.queryCache.getKey('SQL_PRE_AGGREGATIONS_TABLES', `${preAggregation.dataSource}${preAggregation.preAggregationsSchema}${preAggregation.external ? '_EXT' : ''}`);
   }
 
   protected async getTablesQuery(preAggregation) {
@@ -1815,7 +1820,7 @@ export class PreAggregations {
 
   protected tablesUsedRedisKey(tableName) {
     // TODO add dataSource?
-    return `SQL_PRE_AGGREGATIONS_${this.redisPrefix}_TABLES_USED_${tableName}`;
+    return this.queryCache.getKey('SQL_PRE_AGGREGATIONS_TABLES_USED', tableName);
   }
 
   public async addTableUsed(tableName) {
@@ -2072,7 +2077,7 @@ export class PreAggregations {
   public async getQueue(dataSource: string = 'default') {
     if (!this.queue[dataSource]) {
       this.queue[dataSource] = QueryCache.createQueue(
-        `SQL_PRE_AGGREGATIONS_${this.redisPrefix}_${dataSource}`,
+        this.queryCache.getKey('SQL_PRE_AGGREGATIONS', dataSource),
         () => this.driverFactory(dataSource),
         (client, q) => {
           const {

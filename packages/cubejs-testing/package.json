@@ -69,7 +69,8 @@
     "smoke:cubesql": "jest --verbose --forceExit -i dist/test/smoke-cubesql.test.js",
     "smoke:cubesql:snapshot": "jest --verbose --forceExit --updateSnapshot -i dist/test/smoke-cubesql.test.js",
     "smoke:prestodb": "jest --verbose -i dist/test/smoke-prestodb.test.js",
-    "smoke:prestodb:snapshot": "jest --verbose --forceExit --updateSnapshot -i dist/test/smoke-prestodb.test.js"
+    "smoke:prestodb:snapshot": "jest --verbose --forceExit --updateSnapshot -i dist/test/smoke-prestodb.test.js",
+    "integration:cubestore": "jest --runInBand --verbose dist/test/driver-cubestore.test.js"
   },
   "files": [
     "dist/src",

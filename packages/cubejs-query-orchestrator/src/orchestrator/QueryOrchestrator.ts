@@ -8,7 +8,7 @@ import { DriverFactory, DriverFactoryByDataSource } from './DriverFactory';
 import { RedisQueueEventsBus } from './RedisQueueEventsBus';
 import { LocalQueueEventsBus } from './LocalQueueEventsBus';
 
-export type CacheAndQueryDriverType = 'redis' | 'memory';
+export type CacheAndQueryDriverType = 'redis' | 'memory' | 'cubestore';
 
 export enum DriverType {
   External = 'external',
@@ -55,8 +55,8 @@ export class QueryOrchestrator {
     );
     this.cacheAndQueueDriver = cacheAndQueueDriver;
 
-    if (!['redis', 'memory'].includes(cacheAndQueueDriver)) {
-      throw new Error('Only \'redis\' or \'memory\' are supported for cacheAndQueueDriver option');
+    if (!['redis', 'memory', 'cubestore'].includes(cacheAndQueueDriver)) {
+      throw new Error('Only \'redis\', \'memory\' or \'cubestore\' are supported for cacheAndQueueDriver option');
     }
 
     const redisPool = cacheAndQueueDriver === 'redis' ? new RedisPool(options.redisPoolOptions) : undefined;

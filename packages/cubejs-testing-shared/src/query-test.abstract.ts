@@ -161,7 +161,7 @@ export abstract class QueryTestAbstract<T extends BaseDriver> {
     });
 
     const preAggregations: any = query.newPreAggregations().preAggregationsDescription();
-    
+
     const preAggregation = preAggregations[0];
 
     const columns = [
