@@ -33,6 +33,18 @@ cube('Orders', {
 });
 ```
 
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    measures:
+      - name: purchasesRatio
+        sql: ${purchases} / ${count} * 100.0
+        type: number
+        format: percent
+```
+
 You can put any sql into `number` measure as long as it's an aggregate
 expression:
 
@@ -45,6 +57,17 @@ cube('Orders', {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    measures:
+      - name: ratio
+        sql: sum(${CUBE}.amount) / count(*)
+        type: number
 ```
 
 ### <--{"id" : "Measures Types"}--> count
@@ -70,6 +93,21 @@ cube('Orders', {
 });
 ```
 
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    measures:
+      - name: numberOfUsers
+        type: count
+        drillMembers:
+          - id
+          - name
+          - email
+          - company
+```
+
 ### <--{"id" : "Measures Types"}--> countDistinct
 
 Calculates the number of distinct values in a given field. It makes use of SQL’s
@@ -87,6 +125,17 @@ cube('Orders', {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    measures:
+      - name: uniqueUserCount
+        sql: user_id
+        type: countDistinct
 ```
 
 ### <--{"id" : "Measures Types"}--> countDistinctApprox
@@ -113,6 +162,17 @@ cube('Orders', {
 });
 ```
 
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    measures:
+      - name: uniqueUserCount
+        sql: user_id
+        type: countDistinctApprox
+```
+
 ### <--{"id" : "Measures Types"}--> sum
 
 Adds up the values in a given field. It is similar to SQL’s `SUM` function.
@@ -135,6 +195,17 @@ cube('Orders', {
 });
 ```
 
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    measures:
+      - name: revenue
+        sql: ${chargesAmount}
+        type: sum
+```
+
 ```javascript
 cube('Orders', {
   measures: {
@@ -146,6 +217,17 @@ cube('Orders', {
 });
 ```
 
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    measures:
+      - name: revenue
+        sql: amount
+        type: sum
+```
+
 ```javascript
 cube('Orders', {
   measures: {
@@ -155,6 +237,17 @@ cube('Orders', {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    measures:
+      - name: revenue
+        sql: fee * 0.1
+        type: sum
 ```
 
 ### <--{"id" : "Measures Types"}--> avg
@@ -177,6 +270,17 @@ cube('Orders', {
 });
 ```
 
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    measures:
+      - name: averageTransaction
+        sql: ${transactionAmount}
+        type: avg
+```
+
 ### <--{"id" : "Measures Types"}--> min
 
 Type of measure `min` is calculated as a minimum of values defined in `sql`.
@@ -190,6 +294,17 @@ cube('Orders', {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    measures:
+      - name: dateFirstPurchase
+        sql: date_purchase
+        type: min
 ```
 
 ### <--{"id" : "Measures Types"}--> max
@@ -207,6 +322,17 @@ cube('Orders', {
 });
 ```
 
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    measures:
+      - name: dateLastPurchase
+        sql: date_purchase
+        type: max
+```
+
 ### <--{"id" : "Measures Types"}--> runningTotal
 
 Type of measure `runningTotal` is calculated as summation of values defined in
@@ -221,6 +347,17 @@ cube('Orders', {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    measures:
+      - name: totalSubscriptions
+        sql: subscription_amount
+        type: runningTotal
 ```
 
 ## Measures Formats
@@ -244,6 +381,18 @@ cube('Orders', {
 });
 ```
 
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    measures:
+      - name: purchaseConversion
+        sql: ${purchase}/${checkout}*100.0
+        type: number
+        format: percent
+```
+
 ### <--{"id" : "Measures Formats"}--> currency
 
 `currency` is used for monetary values.
@@ -258,6 +407,18 @@ cube('Orders', {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    measures:
+      - name: totalAmount
+        sql: amount
+        type: runningTotal
+        format: currency
 ```
 
 ## Dimensions Types
@@ -285,6 +446,17 @@ cube('Orders', {
 });
 ```
 
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    dimensions:
+      - name: completedAt
+        sql: completed_at
+        type: time
+```
+
 ### <--{"id" : "Dimensions Types"}--> string
 
 `string` is typically used with fields that contain letters or special
@@ -305,6 +477,17 @@ cube('Orders', {
 });
 ```
 
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    dimensions:
+      - name: fullName
+        sql: CONCAT(${firstName}, ' ', ${lastName})
+        type: string
+```
+
 ### <--{"id" : "Dimensions Types"}--> number
 
 `number` is typically used with fields that contain number or integer.
@@ -318,6 +501,17 @@ cube('Orders', {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    dimensions:
+      - name: amount
+        sql: amount
+        type: number
 ```
 
 ### <--{"id" : "Dimensions Types"}--> boolean
@@ -334,6 +528,17 @@ cube('Orders', {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    dimensions:
+      - name: isEnabled
+        sql: is_enabled
+        type: boolean
 ```
 
 ### <--{"id" : "Dimensions Types"}--> geo
@@ -357,6 +562,20 @@ cube('Orders', {
 });
 ```
 
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    dimensions:
+      - name: location
+        type: geo
+        latitude:
+          sql: ${CUBE}.latitude
+        longitude:
+          sql: ${CUBE}.longitude
+```
+
 ## Dimensions Formats
 
 ### <--{"id" : "Dimensions Formats"}--> imageUrl
@@ -376,6 +595,18 @@ cube('Orders', {
 });
 ```
 
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    dimensions:
+      - name: image
+        sql: CONCAT('https://img.example.com/id/', ${id})
+        type: string
+        format: imageUrl
+```
+
 ### <--{"id" : "Dimensions Formats"}--> id
 
 `id` is used for IDs. It allows to eliminate applying of comma for 5+ digit
@@ -392,6 +623,18 @@ cube('Orders', {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    dimensions:
+      - name: image
+        sql: id
+        type: number
+        format: id
 ```
 
 ### <--{"id" : "Dimensions Formats"}--> link
@@ -423,6 +666,24 @@ cube('Orders', {
 });
 ```
 
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    dimensions:
+      - name: orderLink
+        sql: "'http://myswebsite.com/orders/' || id"
+        type: string
+        format: link
+      - name: crmLink
+        sql: "'https://na1.salesforce.com/' || id"
+        type: string
+        format:
+          label: View in Salesforce
+          type: link
+```
+
 ### <--{"id" : "Dimensions Formats"}--> currency
 
 `currency` is used for monetary values.
@@ -431,12 +692,24 @@ cube('Orders', {
 cube('Orders', {
   dimensions: {
     amount: {
-      sql: `abount`,
+      sql: `amount`,
       type: `number`,
       format: `currency`,
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    dimensions:
+      - name: amount
+        sql: amount
+        type: number
+        format: currency
 ```
 
 ### <--{"id" : "Dimensions Formats"}--> percent
@@ -455,9 +728,20 @@ cube('Orders', {
 });
 ```
 
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    dimensions:
+      - name: openRate
+        sql: COALESCE(100.0 * ${uniqOpenCount} / NULLIF(${deliveredCount}, 0), 0)
+        type: number
+        format: percent
+```
+
 [ref-string-time-dims]:
   /schema/fundamentals/additional-concepts#string-time-dimensions
-[ref-schema-ref-preaggs-rollup]:
-  /schema/reference/pre-aggregations#type-rollup
+[ref-schema-ref-preaggs-rollup]: /schema/reference/pre-aggregations#type-rollup
 [ref-schema-ref-calc-measures]: /schema/reference/measures#calculated-measures
 [ref-drilldowns]: /schema/fundamentals/additional-concepts#drilldowns

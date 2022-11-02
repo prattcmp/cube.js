@@ -47,6 +47,11 @@ cube(`RetailOrders`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+```
+
 An `OnlineOrders` cube for online sales:
 
 ```javascript
@@ -72,6 +77,11 @@ cube(`OnlineOrders`, {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
 ```
 
 Given the above cubes, a data blending cube can be introduced as follows:
@@ -136,6 +146,11 @@ FROM ${RetailOrders.sql()}
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
 ```
 
 Another use case of the Data Blending approach would be when you want to chart

@@ -53,6 +53,11 @@ cube(`Orders`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+```
+
 Pre-aggregations must include all dimensions, measures, and filters you will
 query with.
 
@@ -118,6 +123,11 @@ cube(`Orders`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+```
+
 <h4 id="parameters-type-originalsql">originalSql</h4>
 
 As the name suggests, it persists the results of the `sql` property of the cube.
@@ -159,6 +169,11 @@ cube(`CompletedOrders`, {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
 ```
 
 <h4 id="parameters-type-rollupjoin">rollupJoin</h4>
@@ -279,6 +294,11 @@ cube('Orders', {
 });
 ```
 
+Or in YAML:
+
+```yaml
+```
+
 <InfoBox>
 
 `rollupJoin` is not required to join cubes from the same data source; instead
@@ -298,6 +318,11 @@ cube('Orders', {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
 ```
 
 </InfoBox>
@@ -340,6 +365,11 @@ cube('Orders', {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
 ```
 
 ### <--{"id" : "Parameters"}--> dimensions
@@ -405,6 +435,11 @@ cube('Orders', {
 });
 ```
 
+Or in YAML:
+
+```yaml
+```
+
 A [`granularity`][self-granularity] **must** also be included in the
 pre-aggregation definition.
 
@@ -429,6 +464,11 @@ cube('Orders', {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
 ```
 
 The value can be one of `second`, `minute`, `hour`, `day`, `week`, `month`,
@@ -465,6 +505,11 @@ cube(`Orders`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+```
+
 ### <--{"id" : "Parameters"}--> partitionGranularity
 
 The `partitionGranularity` defines the granularity for each
@@ -486,6 +531,11 @@ cube('Orders', {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
 ```
 
 The value can be one of `hour`, `day`, `week`, `month`, `quarter`, `year`. A
@@ -538,6 +588,11 @@ cube(`Orders`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+```
+
 In the above example, the refresh key SQL will be executed every 10 seconds, as
 [`every`][self-refreshkey-every] is not defined. If the results of the SQL
 refresh key differ from the last execution, then the pre-aggregation will be
@@ -565,6 +620,11 @@ cube(`Orders`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+```
+
 For possible `every` parameter values please refer to
 [`refreshKey`][ref-cube-refreshkey] documentation.
 
@@ -584,6 +644,11 @@ cube(`Orders`, {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
 ```
 
 In the above example, the refresh key SQL will be executed every hour. If the
@@ -623,6 +688,11 @@ cube(`Orders`, {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
 ```
 
 <h4 id="parameters-refresh-key-updatewindow">updateWindow</h4>
@@ -671,6 +741,11 @@ cube(`Orders`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+```
+
 This property is required when using [`incremental`][self-incremental]
 refreshes.
 
@@ -697,6 +772,11 @@ cube(`Orders`, {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
 ```
 
 ### <--{"id" : "Parameters"}--> useOriginalSqlPreAggregations
@@ -748,6 +828,11 @@ cube(`Orders`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+```
+
 ### <--{"id" : "Parameters"}--> scheduledRefresh
 
 To always keep pre-aggregations up-to-date, you can set
@@ -788,6 +873,11 @@ cube(`Orders`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+```
+
 ### <--{"id" : "Parameters"}--> buildRangeStart and buildRangeEnd
 
 The build range defines what partitions should be built by a scheduled refresh.
@@ -823,6 +913,11 @@ cube(`Orders`, {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
 ```
 
 It can be used together with the pre-aggregation's `refreshKey` to define
@@ -861,6 +956,11 @@ cube(`Orders`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+```
+
 ### <--{"id" : "Parameters"}--> unionWithSourceData
 
 This option allows combining a pre-aggregation with fresh data retrieved from
@@ -884,6 +984,11 @@ cube(`Orders`, {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
 ```
 
 ### <--{"id" : "Parameters"}--> indexes
@@ -912,6 +1017,11 @@ cube(`Orders`, {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
 ```
 
 To maximize performance, you can introduce an index per query, so the set of
@@ -945,6 +1055,11 @@ cube(`Orders`, {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
 ```
 
 ### <--{"id" : "Parameters"}--> Aggregating indexes
@@ -992,6 +1107,11 @@ cube(`Orders`, {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
 ```
 
 [ref-api-ref-query-ref]: https://cube.dev/docs/query-format#query-properties

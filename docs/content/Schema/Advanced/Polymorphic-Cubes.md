@@ -67,6 +67,11 @@ cube(`Users`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+```
+
 Then you can extend the `Teachers` and `Students` cubes from `Users`:
 
 ```javascript
@@ -79,6 +84,11 @@ cube(`Students`, {
   extends: Users,
   sql: `SELECT * FROM ${Users.sql()} WHERE type = 'student'`,
 });
+```
+
+Or in YAML:
+
+```yaml
 ```
 
 Once we have those cubes, we can define correct joins from the `Lessons` cube:
@@ -98,6 +108,11 @@ cube(`Lessons`, {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
 ```
 
 [ref-schema-advanced-extend]: /schema/advanced/extending-cubes

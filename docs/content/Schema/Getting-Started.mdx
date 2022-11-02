@@ -10,8 +10,12 @@ redirect_from:
 ---
 
 <InfoBox>
-  We're excited to expand the beta of YAML and Python support in Cube data modeling. <br />
-  Please <a href="https://forms.gle/4CZRRKK8nD4PvtxZA"> reach out to us </a> if you’d like to sign up for early access.
+  We're excited to expand the beta of YAML and Python support in Cube data
+  modeling. <br />
+  Please <a href="https://forms.gle/4CZRRKK8nD4PvtxZA">
+    {' '}
+    reach out to us{' '}
+  </a> if you’d like to sign up for early access.
 </InfoBox>
 
 A Cube.js Data Schema is used to model raw data into meaningful business
@@ -47,10 +51,20 @@ database, such as `users`, `orders`, `products`, etc. In the `sql` parameter of
 the cube we define a base table for this cube. In our case, the base table is
 simply our `users` table.
 
+You can define schemas in either JavaScript or YAML, we'll go over both below:
+
 ```javascript
+// schema/Users.js
 cube(`Users`, {
   sql: `SELECT * FROM users`,
 });
+```
+
+```yaml
+# schema/Users.yml
+cubes:
+  - name: Users
+    sql: 'SELECT * FROM users'
 ```
 
 ## 2. Adding Measures and Dimensions
@@ -96,6 +110,32 @@ cube(`Users`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Users
+    sql: 'SELECT * FROM users'
+
+    measures:
+      - name: count
+        type: count
+
+    dimensions:
+      - name: id
+        sql: 'id'
+        type: number
+        primaryKey: true
+
+      - name: city
+        sql: 'city'
+        type: string
+
+      - name: companyName
+        sql: 'company_name'
+        type: string
+```
+
 Let's break down the above code snippet piece-by-piece. After defining the base
 table for the cube (with the `sql` property), we create a `count` measure in the
 `measures` block. [The type][ref-schema-types-formats] `count` and sql `id`
@@ -136,6 +176,24 @@ cube(`Users`, {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Users
+    sql: 'SELECT * FROM users'
+
+    measures:
+      - name: count
+        type: count
+
+      - name: paying_count
+        sql: 'id'
+        type: count
+        filters:
+          - sql: "{CUBE}.paying = 'true'"
 ```
 
 <InfoBox>
@@ -189,6 +247,29 @@ cube(`Users`, {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Users
+    sql: 'SELECT * FROM users'
+
+    measures:
+      - name: count
+        type: count
+
+      - name: payingCount
+        sql: 'id'
+        type: count
+        filters:
+          - sql: "{CUBE}.paying = 'true'"
+
+      - name: payingPercentage
+        sql: '100.0 * ${payingCount} / ${count}'
+        type: number
+        format: percent
 ```
 
 Here we defined a calculated measure `payingPercentage`, which divides

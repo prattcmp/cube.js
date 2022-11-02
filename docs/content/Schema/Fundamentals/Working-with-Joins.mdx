@@ -52,6 +52,11 @@ cube('Orders', {
 });
 ```
 
+Or in YAML:
+
+```yaml
+```
+
 We could add a join to the `Customers` cube:
 
 ```javascript
@@ -65,6 +70,11 @@ cube('Customers', {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
 ```
 
 The join above means a customer has many orders. Let's send the following JSON
@@ -119,6 +129,11 @@ cube('Orders', {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
 ```
 
 In the above schema, our `Orders` cube defines the relationship between itself
@@ -229,6 +244,11 @@ cube(`PostTopics`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+```
+
 In scenarios where a table doesn't define a primary key, one can be generated
 using SQL:
 
@@ -242,6 +262,11 @@ cube(`PostTopics`, {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
 ```
 
 ### <--{"id" : "Many-to-many joins"}--> Many-to-many joins without an associative table
@@ -288,6 +313,11 @@ cube(`Emails`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+```
+
 We can extract campaigns data into a virtual `Campaigns` cube:
 
 ```javascript
@@ -321,6 +351,11 @@ GROUP BY 1, 2, 3
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
 ```
 
 The following diagram shows our data schema with the `Campaigns` cube:
@@ -386,6 +421,11 @@ cube(`Campaigns`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+```
+
 ## Directions of joins
 
 The direction of [joins][ref-schema-ref-joins] greatly influences the final
@@ -414,9 +454,7 @@ cube('Orders', {
     },
   },
 });
-```
 
-```javascript
 cube('Customers', {
   sql: `SELECT * FROM customers`,
 
@@ -435,6 +473,11 @@ cube('Customers', {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
 ```
 
 The first case is to calculate the total revenue per customer. Let's name this
@@ -475,6 +518,11 @@ cube('Orders', {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
 ```
 
 After adding the join to the schema, we can query the cube as follows:
@@ -531,6 +579,11 @@ cube('Customers', {
 });
 ```
 
+Or in YAML:
+
+```yaml
+```
+
 We can then query the cube as follows:
 
 ```json
@@ -580,6 +633,11 @@ view('CustomersWithoutOrders', {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
 ```
 
 ### <--{"id" : "Directions of joins"}--> Transitive join pitfalls
@@ -650,6 +708,11 @@ cube(`Organizations`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+```
+
 Let's try and execute a query:
 
 ```json
@@ -695,6 +758,11 @@ cube(`OrganizationUsers`, {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
 ```
 
 [ref-schema-ref-joins] /schema/reference/joins

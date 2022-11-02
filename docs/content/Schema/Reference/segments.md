@@ -26,6 +26,17 @@ cube(`Users`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+cubes:
+  # ...
+  - name: Users
+    segments:
+      sfUsers:
+        sql: ${CUBE}.location = 'San Francisco'
+```
+
 Or use segments to implement cross-column `OR` logic:
 
 ```javascript
@@ -38,6 +49,17 @@ cube(`Users`, {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Users
+    # ...
+    segments:
+      sfUsers:
+        sql: ${CUBE}.location = 'San Francisco' or ${CUBE}.state = 'CA'
 ```
 
 As with other cube member definitions segments can be
@@ -99,6 +121,21 @@ cube(`Users`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Users
+    # ...
+    dimensions:
+      location:
+        sql: location
+        type: string
+    segments:
+      sfUsers:
+        sql: ${CUBE}.location = 'San Francisco'
+```
+
 In this case following queries are equivalent:
 
 ```json
@@ -140,6 +177,17 @@ cube(`Users`, {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Users
+    # ...
+    segments:
+      sfNyUsers:
+        sql: ${CUBE}.location = 'San Francisco' OR ${CUBE}.location like '%New York%'
 ```
 
 [ref-backend-query]: /query-format

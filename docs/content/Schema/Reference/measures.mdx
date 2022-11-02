@@ -40,6 +40,20 @@ cube(`Orders`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    measures:
+      - name: count
+        sql: id
+        type: count
+      - name: totalAmount
+        sql: amount
+        type: sum
+```
+
 ## Parameters
 
 ### <--{"id" : "Parameters"}--> type
@@ -60,6 +74,17 @@ cube(`Orders`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    measures:
+      - name: ordersCount
+        sql: id
+        type: count
+```
+
 ### <--{"id" : "Parameters"}--> sql
 
 `sql` is a required parameter. It can take any valid SQL expression depending on
@@ -76,6 +101,17 @@ cube(`Orders`, {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    measures:
+      - name: usersCount
+        sql: count(*)
+        type: number
 ```
 
 ### <--{"id" : "Parameters"}--> format
@@ -97,6 +133,18 @@ cube(`Orders`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    measures:
+      - name: total
+        sql: amount
+        type: runningTotal
+        format: currency
+```
+
 ### <--{"id" : "Parameters"}--> title
 
 You can use the `title` parameter to change a measure’s displayed name. By
@@ -115,6 +163,18 @@ cube(`Orders`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    measures:
+      - name: ordersCount
+        sql: id
+        type: count
+        title: Number of Orders Placed
+```
+
 ### <--{"id" : "Parameters"}--> description
 
 You can add details to a measure’s definition via the `description` parameter:
@@ -129,6 +189,18 @@ cube(`Orders`, {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    measures:
+      - name: ordersCount
+        sql: id
+        type: count
+        description: count of all orders
 ```
 
 ### <--{"id" : "Parameters"}--> shown
@@ -148,6 +220,18 @@ cube(`Orders`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    measures:
+      - name: ordersCount
+        sql: id
+        type: count
+        shown: false
+```
+
 ### <--{"id" : "Parameters"}--> filters
 
 If you want to add some conditions for a metric's calculation, you should use
@@ -163,6 +247,19 @@ cube(`Orders`, {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    measures:
+      - name: ordersCompletedCount
+        sql: id
+        type: count
+        filters:
+          - sql: ${CUBE}.status = 'completed'
 ```
 
 ### <--{"id" : "Parameters"}--> rollingWindow
@@ -204,6 +301,19 @@ cube(`Orders`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    measures:
+      - name: rollingCountMonth
+        sql: id
+        type: count
+        rollingWindow:
+          trailing: 1 month
+```
+
 Here's an example of an `unbounded` window that's used for cumulative counts:
 
 ```javascript
@@ -219,6 +329,18 @@ cube(`Orders`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    measures:
+      - name: cumulativeCount
+        type: count
+        rollingWindow:
+          trailing: unbounded
+```
+
 ### <--{"id" : "Parameters"}--> drillMembers
 
 Using the `drillMembers` parameter, you can define a set of [drill
@@ -226,14 +348,37 @@ down][ref-drilldowns] fields for the measure. `drillMembers` is defined as an
 array of dimensions. Cube.js automatically injects dimensions’ names and other
 cubes’ names with dimensions in the context, so you can reference these
 variables in the `drillMembers` array. [Learn more about how to define and use
-drill downs][ref-drilldowns].
+drilldowns][ref-drilldowns].
 
 ```javascript
-revenue: {
-  type: `sum`,
-  sql: `price`,
-  drillMembers: [id, price, status, Products.name, Products.id]
-}
+cube('Orders', {
+  ...,
+
+  measures: {
+    revenue: {
+      type: `sum`,
+      sql: `price`,
+      drillMembers: [id, price, status, Products.name, Products.id],
+    },
+  },
+});
+```
+
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    measures:
+      - name: revenue
+        type: sum
+        sql: price
+        drillMembers:
+          - id
+          - price
+          - status
+          - Products.name
+          - Products.id
 ```
 
 ### <--{"id" : "Parameters"}--> meta
@@ -246,13 +391,25 @@ cube(`Orders`, {
     revenue: {
       type: `sum`,
       sql: `price`,
-      //...
       meta: {
         any: 'value',
       },
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    measures:
+      - name: revenue
+        type: sum
+        sql: price
+        meta:
+          any: value
 ```
 
 ## Calculated Measures
@@ -271,6 +428,18 @@ cube(`Orders`, {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    measures:
+      - name: purchasesToCreatedAccountRatio
+        sql: ${purchases} / ${Users.count} * 100.0
+        type: number
+        format: percent
 ```
 
 You can create calculated measures from several joined cubes. In this case, a

@@ -47,6 +47,11 @@ cube(`Users`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+```
+
 ## Naming
 
 There are certain rules to follow for a cube and cube member names:
@@ -103,11 +108,16 @@ cube(`Contacts`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+```
+
 Referencing a foreign cube in the `sql` parameter instructs Cube.js to build an
 implicit join to this cube. Using the schema above, we'll use a query as an
 example:
 
-```jsom
+```json
 {
   "dimensions": ["Users.name"];
 }
@@ -147,6 +157,11 @@ cube(`Contacts`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+```
+
 ## Parameters
 
 ### <--{"id" : "Parameters"}--> sql
@@ -163,12 +178,22 @@ cube(`Orders`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+```
+
 You can reference others’ cubes SQL statement for code reuse.
 
 ```javascript
 cube(`Companies`, {
   sql: `SELECT users.company_name, users.company_id FROM ${Users.sql()} AS users`,
 });
+```
+
+Or in YAML:
+
+```yaml
 ```
 
 ### <--{"id" : "Parameters"}--> title
@@ -188,6 +213,11 @@ cube(`Orders`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+```
+
 ### <--{"id" : "Parameters"}--> description
 
 Use a description in your cubes to allow your team to better understand what
@@ -203,6 +233,11 @@ cube(`Orders`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+```
+
 ### <--{"id" : "Parameters"}--> extends
 
 You can extend cubes in order to reuse all declared members of a cube. In the
@@ -211,7 +246,7 @@ from `OrderFacts`:
 
 ```javascript
 cube(`OrderFacts`, {
-  sql: `SELECT * FROM orders`
+  sql: `SELECT * FROM orders`,
 
   measures: {
     count: {
@@ -231,6 +266,11 @@ cube(`ExtendedOrderFacts`, {
     }
   }
 });
+```
+
+Or in YAML:
+
+```yaml
 ```
 
 You can also omit the cube name while defining it. This way Cube.js doesn't
@@ -261,6 +301,11 @@ cube(`ExtendedOrderFacts`, {
     }
   }
 });
+```
+
+Or in YAML:
+
+```yaml
 ```
 
 ### <--{"id" : "Parameters"}--> refreshKey
@@ -295,6 +340,11 @@ cube(`OrderFacts`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+```
+
 You can use interval based `refreshKey`. For example:
 
 ```javascript
@@ -305,6 +355,11 @@ cube(`OrderFacts`, {
     every: `1 hour`,
   },
 });
+```
+
+Or in YAML:
+
+```yaml
 ```
 
 `every` - can be set as an interval with granularities `second`, `minute`,
@@ -321,6 +376,11 @@ cube(`OrderFacts`, {
     timezone: 'America/Los_Angeles',
   },
 });
+```
+
+Or in YAML:
+
+```yaml
 ```
 
 `every` can accept only equal time intervals - so "Day of month" and "month"
@@ -399,6 +459,11 @@ cube(`OrderFacts`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+```
+
 ### <--{"id" : "Parameters"}--> sqlAlias
 
 Use `sqlAlias` when auto-generated cube alias prefix is too long and truncated
@@ -412,6 +477,11 @@ cube(`OrderFacts`, {
 
   // ...
 });
+```
+
+Or in YAML:
+
+```yaml
 ```
 
 It'll generate aliases for members such as `ofacts__count`. `sqlAlias` affects
@@ -431,13 +501,20 @@ cube(`Tickets`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+```
+
 ## Context Variables
 
 ### <--{"id" : "Context Variables"}--> Filter Params
 
 `FILTER_PARAMS` allows you to use filter values during SQL generation. You can
-add it for any valid SQL expression as in the case of dimensions.
-This is useful if you want to hint your database optimizer to use a specific index or filter out partitions or shards in your cloud data warehouse so you won't be billed for scanning those.
+add it for any valid SQL expression as in the case of dimensions. This is useful
+if you want to hint your database optimizer to use a specific index or filter
+out partitions or shards in your cloud data warehouse so you won't be billed for
+scanning those.
 
 It has the following structure:
 

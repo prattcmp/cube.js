@@ -28,7 +28,7 @@ Products.
 
 ```javascript
 cube(`Orders`, {
-  sql: `select * from orders`,
+  sql: `SELECT * FROM orders`,
 
   joins: {
     Users: {
@@ -65,6 +65,41 @@ cube(`Orders`, {
     },
   },
 });
+```
+
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Orders
+    sql: `SELECT * FROM orders`
+
+    joins:
+      - name: Users
+        type: belongsTo
+        sql: ${Orders}.user_id = ${Users}.id
+      - name: Products
+        type: belongsTo
+        sql: ${Orders}.product_id = ${Products}.id
+
+    measures:
+      - name: count
+        type: count
+        drillMembers:
+          - id
+          - status
+          - Products.name
+          - Users.email
+
+    dimensions:
+      - name: id
+        sql: id
+        type: number
+        primaryKey: true
+        shown: true
+      - name: status
+        sql: status
+        type: string
 ```
 
 You can follow [this tutorial][blog-drilldown-api] to learn more about building
@@ -107,7 +142,7 @@ FROM sales_managers
 GROUP BY 1
 ```
 
-Cube.js makes subqueries easy and efficient. Subqueries are defined as regular
+Cube makes subqueries easy and efficient. Subqueries are defined as regular
 dimensions with the parameter `subQuery` set to true.
 
 ```javascript
@@ -155,6 +190,42 @@ cube(`SalesManagers`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Deals
+    sql: SELECT * FROM deals
+
+    measures:
+      - name: amount
+        sql: amount
+        type: sum
+
+  - name: SalesManagers
+    sql: SELECT * FROM sales_managers
+
+    joins:
+      - name: Deals
+        relationship: hasMany
+        sql: ${SalesManagers}.id = ${Deals}.sales_manager_id
+
+    measures:
+      - name: averageDealAmount
+        sql: ${dealsAmount}
+        type: avg
+
+    dimensions:
+      - name: id
+        sql: id
+        type: string
+        primaryKey: true
+      - name: dealsAmount
+        sql: ${Deals.amount}
+        type: number
+        subQuery: true
+```
+
 A subquery requires referencing at least one [measure][ref-schema-ref-measures]
 in its definition. Generally speaking, all the columns used to define a subquery
 dimension should first be defined as [measures][ref-schema-ref-measures] on
@@ -186,6 +257,27 @@ cube(`SalesManagers`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+cubes:
+  - name: Deals
+    sql: select * from deals
+
+    measures:
+      - name: count
+        type: count
+
+  - name: SalesManagers
+    # ...
+    dimensions:
+      # ...
+      - name: dealsAmount
+        sql: SUM(${Deals}.amount) # Doesn't work, because `amount` is not a measure on `Deals`
+        type: number
+        subQuery: true
+```
+
 You can reference subquery dimensions in measures as usual
 [dimensions][ref-schema-ref-dimensions]. The example below shows the definition
 of an average deal amount per sales manager:
@@ -214,10 +306,15 @@ cube(`SalesManagers`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+```
+
 ### <--{"id" : "Subquery"}--> Under the hood
 
-Based on the subquery dimension definition, Cube.js will create a query that
-will include the primary key dimension of the main cube and all
+Based on the subquery dimension definition, Cube will create a query that will
+include the primary key dimension of the main cube and all
 [measures][ref-schema-ref-measures] and [dimensions][ref-schema-ref-dimensions]
 included in the SQL definition of the subquery dimension.
 
@@ -253,11 +350,11 @@ LEFT JOIN (
 
 ## String Time Dimensions
 
-Cube.js always expects a timestamp with timezone (or compatible type) as an
-input to the time dimension. However, there are a lot of cases when the
-underlying table's datetime information is stored as a string. Most SQL
-databases support datetime parsing which allows converting strings to
-timestamps. Let's consider an example cube for BigQuery:
+Cube always expects a timestamp with timezone (or compatible type) as an input
+to the time dimension. However, there are a lot of cases when the underlying
+table's datetime information is stored as a string. Most SQL databases support
+datetime parsing which allows converting strings to timestamps. Let's consider
+an example cube for BigQuery:
 
 ```javascript
 cube(`Events`, {
@@ -274,11 +371,16 @@ cube(`Events`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+```
+
 In this particular cube, the `date` column will be parsed using the `%Y-%m-%d`
 format. Please note that as we do not pass timezone parameter to
 [`PARSE_TIMESTAMP`][bq-parse-timestamp], it will set `UTC` as the timezone by
 default. You should always set timezone appropriately for parsed timestamps as
-Cube.js always does timezone conversions according to user settings.
+Cube always does timezone conversions according to user settings.
 
 Although query performance of big data backends like BigQuery or Presto won't
 likely suffer from date parsing, performance of RDBMS backends like Postgres

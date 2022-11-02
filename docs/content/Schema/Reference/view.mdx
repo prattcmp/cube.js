@@ -39,6 +39,19 @@ view(`ActiveUsers`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+views:
+  - name: active_users
+    includes:
+      # Measures
+      - users.rolling_count
+      # Dimensions
+      - users.city
+      - users.created_at
+```
+
 You also can reference measures and dimensions one-by-one. This is helpful when
 there is a need to control the join path or to rename measures and dimensions
 from the underlying cubes. In the example below, we create a view
@@ -69,8 +82,20 @@ view(`CompletedOrders`, {
 });
 ```
 
-Views can be queried the same way as cubes; the example below show how to query
-the above view with SQL API.
+Or in YAML:
+
+```yaml
+views:
+  - name: CompletedOrders
+    includes:
+      # Measures
+      - Orders.completedCount
+      # Dimensions
+      - Orders.Users.city
+```
+
+Views can be queried the same way as cubes; the example below shows how to query
+the above view with the SQL API:
 
 ```sql
 SELECT
@@ -97,6 +122,14 @@ view(`ActiveUsers`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+views:
+  - name: ActiveUsers
+    description: 14 days rolling count of active users
+```
+
 ### <--{"id" : "Parameters"}--> includes
 
 The `includes` property is used to bulk add measures or dimensions to a view.
@@ -114,6 +147,19 @@ view(`ActiveUsers`, {
 });
 ```
 
+Or in YAML:
+
+```yaml
+views:
+  - name: ActiveUsers
+    includes:
+      # Measures
+      - users.rolling_count
+      # Dimensions
+      - users.city
+      - users.created_at
+```
+
 ### <--{"id" : "Parameters"}--> shown
 
 The `shown` property is used to manage the visibility of a view. Some data may
@@ -127,4 +173,19 @@ view(`ARR`, {
   shown: COMPILE_CONTEXT.permissions['finance'],
   includes: [Revenue.arr, Revenue.date, Customers.plan],
 });
+```
+
+Or in YAML:
+
+```yaml
+views:
+  - name: ARR
+    description: Annual Recurring Revenue
+    shown: COMPILE_CONTEXT.permissions['finance'],
+    includes:
+      # Measures
+      - Revenue.arr
+      # Dimensions
+      - Revenue.date
+      - Customers.plan
 ```
