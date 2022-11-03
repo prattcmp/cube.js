@@ -50,6 +50,7 @@ use crate::CubeError;
 use arrow::datatypes::TimeUnit::Microsecond;
 use arrow::datatypes::{DataType, Field};
 use cache::{CacheItemRocksIndex, CacheItemRocksTable};
+use chrono::serde::ts_seconds_option;
 use chrono::{DateTime, NaiveDateTime, Utc};
 use chunks::ChunkRocksTable;
 use core::{fmt, mem};
@@ -170,7 +171,7 @@ macro_rules! base_rocks_secondary_index {
 
 #[macro_export]
 macro_rules! rocks_table_impl {
-    ($table: ty, $rocks_table: ident, $table_id: expr, $indexes: block, $cfn: expr) => {
+    ($table: ty, $rocks_table: ident, $table_id: expr, $indexes: block, $column_family: expr) => {
         pub(crate) struct $rocks_table<'a> {
             db: crate::metastore::DbTableRef<'a>,
         }
@@ -185,7 +186,7 @@ macro_rules! rocks_table_impl {
             type T = $table;
 
             fn cf_name(&self) -> ColumnFamilyName {
-                $cfn
+                $column_family
             }
 
             fn db(&self) -> &DB {
@@ -744,6 +745,7 @@ pub struct CacheItem {
     prefix: Option<String>,
     key: String,
     value: String,
+    #[serde(with = "ts_seconds_option")]
     expire: Option<DateTime<Utc>>
 }
 }
@@ -1202,7 +1204,11 @@ pub trait MetaStore: DIService + Send + Sync {
     async fn debug_dump(&self, out_path: String) -> Result<(), CubeError>;
 
     async fn all_cache(&self) -> Result<Vec<IdRow<CacheItem>>, CubeError>;
-    async fn cache_set(&self, item: CacheItem, nx: bool) -> Result<bool, CubeError>;
+    async fn cache_set(
+        &self,
+        item: CacheItem,
+        update_if_not_exists: bool,
+    ) -> Result<bool, CubeError>;
     async fn cache_truncate(&self) -> Result<(), CubeError>;
     async fn cache_delete(&self, key: String) -> Result<(), CubeError>;
     async fn cache_get(&self, key: String) -> Result<Option<IdRow<CacheItem>>, CubeError>;
@@ -2056,15 +2062,6 @@ trait RocksTable: Debug + Send + Sync {
             if let Some(row) = self.get_row(id)? {
                 res.push(row);
             } else {
-                if RocksSecondaryIndex::is_ttl(secondary_index) {
-                    trace!(
-                        "Row exists in secondary index (with TTL) however missing in {:?} table: {}. Compaction problem?",
-                        self, id
-                    );
-
-                    continue;
-                }
-
                 let index = self.get_index_by_id(BaseRocksSecondaryIndex::get_id(secondary_index));
                 self.rebuild_index(&index)?;
 
@@ -4056,7 +4053,11 @@ impl MetaStore for RocksMetaStore {
         .await
     }
 
-    async fn cache_set(&self, item: CacheItem, nx: bool) -> Result<bool, CubeError> {
+    async fn cache_set(
+        &self,
+        item: CacheItem,
+        update_if_not_exists: bool,
+    ) -> Result<bool, CubeError> {
         self.write_operation_cache(move |db_ref, batch_pipe| {
             let cache_schema = CacheItemRocksTable::new(db_ref.clone());
             let index_key = CacheItemIndexKey::ByPath(item.get_path());
@@ -4064,7 +4065,7 @@ impl MetaStore for RocksMetaStore {
                 .get_single_opt_row_by_index(&index_key, &CacheItemRocksIndex::ByPath)?;
 
             if let Some(id_row) = id_row_opt {
-                if nx {
+                if update_if_not_exists {
                     return Ok(false);
                 };
 

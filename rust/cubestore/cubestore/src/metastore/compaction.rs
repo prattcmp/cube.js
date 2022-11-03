@@ -38,6 +38,7 @@ impl Drop for MetaStoreCacheCompactionFilter {
     fn drop(&mut self) {
         let elapsed = Utc::now() - self.current;
 
+        #[cfg(debug_assertions)]
         println!(
             "Compaction finished in {}.{} secs (is_full: {}), scanned: {}, removed: {}, orphaned: {}",
             elapsed.num_seconds(),
@@ -81,9 +82,9 @@ impl MetaStoreCacheCompactionFilter {
             return CompactionDecision::Keep;
         }
 
-        match chrono::DateTime::parse_from_rfc3339(expire.as_str()) {
-            Ok(expire) => {
-                if expire <= self.current {
+        match chrono::NaiveDateTime::from_timestamp_opt(expire.as_i64(), 0) {
+            Some(expire) => {
+                if DateTime::<Utc>::from_utc(expire, Utc) <= self.current {
                     self.removed += 1;
 
                     CompactionDecision::Remove
@@ -91,10 +92,10 @@ impl MetaStoreCacheCompactionFilter {
                     CompactionDecision::Keep
                 }
             }
-            Err(err) => {
+            None => {
                 warn!(
-                    r#"Unable to parser date from expire field with value "{}", error: {}"#,
-                    expire, err
+                    r#"Unable to parser date from expire field with value "{}""#,
+                    expire
                 );
 
                 self.orphaned += 1;
@@ -216,6 +217,7 @@ impl CompactionFilterFactory for MetaStoreCacheCompactionFactory {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::config::init_test_logger;
     use crate::metastore::cache::{CacheItemRocksIndex, CacheItemRocksTable};
     use crate::metastore::{get_compaction_state, BaseRocksSecondaryIndex, CacheItem, RocksTable};
     use crate::TableId;
@@ -230,8 +232,10 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_compaction_table_no_ttl_keep() {
+    #[tokio::test]
+    async fn test_compaction_table_no_ttl_keep() {
+        init_test_logger().await;
+
         let mut filter = MetaStoreCacheCompactionFilter::new(
             Some(get_compaction_state()),
             get_test_filter_context(),
@@ -250,8 +254,10 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_compaction_table_tll_not_expired_keep() {
+    #[tokio::test]
+    async fn test_compaction_table_tll_not_expired_keep() {
+        init_test_logger().await;
+
         let mut filter = MetaStoreCacheCompactionFilter::new(
             Some(get_compaction_state()),
             get_test_filter_context(),
@@ -270,8 +276,10 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_compaction_table_tll_expired_remove() {
+    #[tokio::test]
+    async fn test_compaction_table_tll_expired_remove() {
+        init_test_logger().await;
+
         let mut filter = MetaStoreCacheCompactionFilter::new(
             Some(get_compaction_state()),
             get_test_filter_context(),
@@ -291,8 +299,10 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_compaction_index_ttl_expired_remove() {
+    #[tokio::test]
+    async fn test_compaction_index_ttl_expired_remove() {
+        init_test_logger().await;
+
         let mut filter = MetaStoreCacheCompactionFilter::new(
             Some(get_compaction_state()),
             get_test_filter_context(),
@@ -314,8 +324,10 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_compaction_index_ttl_not_expired_remove() {
+    #[tokio::test]
+    async fn test_compaction_index_ttl_not_expired_remove() {
+        init_test_logger().await;
+
         let mut filter = MetaStoreCacheCompactionFilter::new(
             Some(get_compaction_state()),
             get_test_filter_context(),
