@@ -19,6 +19,7 @@ export interface QueueDriverOptions {
 }
 
 export interface LocalQueueDriverConnectionInterface {
+  redisHash(queryKey: QueryId): string;
   getResultBlocking(queryKey: string): Promise<unknown>;
   getResult(queryKey: string): Promise<any>;
   addToQueue(keyScore: number, queryKey: QueryId, orphanedTime: any, queryHandler: any, query: any, priority: any, options: any): Promise<unknown>;

@@ -24,8 +24,12 @@ class CubestoreQueueDriverConnection implements LocalQueueDriverConnectionInterf
     console.log(options);
   }
 
-  protected getQueryKey(queryKey: QueryId): string {
-    return `${this.options.redisQueuePrefix}:${hashQueryKey(queryKey)}`;
+  public redisHash(queryKey: QueryId): string {
+    return hashQueryKey(queryKey);
+  }
+
+  protected prefixKey(queryKey: QueryId): string {
+    return `${this.options.redisQueuePrefix}:${queryKey}`;
   }
 
   public async addToQueue(keyScore: number, queryKey: string | [string, any[]], orphanedTime: any, queryHandler: string, query: AddToQueueQuery, priority: number, options: AddToQueueOptions): Promise<unknown> {
@@ -48,7 +52,7 @@ class CubestoreQueueDriverConnection implements LocalQueueDriverConnectionInterf
 
     const _rows = await this.driver.query(`QUEUE ADD PRIORITY ? ? ?`, [
       priority,
-      this.getQueryKey(queryKey),
+      this.prefixKey(this.redisHash(queryKey)),
       JSON.stringify(data)
     ]);
 
@@ -68,21 +72,24 @@ class CubestoreQueueDriverConnection implements LocalQueueDriverConnectionInterf
 
   public async cancelQuery(queryKey: string): Promise<[QueryDef]> {
     const rows = await this.driver.query('QUEUE CANCEL ?', [
-      this.getQueryKey(queryKey)
+      this.prefixKey(queryKey)
     ]);
     if (rows && rows.length) {
       return [JSON.parse(rows[0].value)];
     }
 
-    throw new Error(`Unable to cancel query with id: "${queryKey}"`);
+    throw new Error(`Unable to cancel query with id: "${this.prefixKey(queryKey)}"`);
   }
 
   public async freeProcessingLock(queryKey: string, processingId: string, activated: unknown): Promise<void> {
     // nothing to do
   }
 
-  public async getActiveQueries(): Promise<unknown> {
-    const rows = await this.driver.query('select id from system.queue where status = ?', ['Active']);
+  public async getActiveQueries(): Promise<string[]> {
+    const rows = await this.driver.query('select id from system.queue where status = ? and prefix = ?', [
+      'Active',
+      this.options.redisQueuePrefix
+    ]);
     return rows.map((row) => row.id);
   }
 
@@ -111,32 +118,47 @@ class CubestoreQueueDriverConnection implements LocalQueueDriverConnectionInterf
   }
 
   public async getStalledQueries(): Promise<string[]> {
-    const rows = await this.driver.query('select id from from system.queue WHERE created <= DATE_SUB(NOW(), interval \'1 minute\') AND status = ?', ['Pending']);
+    const rows = await this.driver.query('select id from from system.queue WHERE created <= DATE_SUB(NOW(), interval \'1 minute\') AND status = ? AND prefix = ?', [
+      'Pending',
+      this.options.redisQueuePrefix
+    ]);
     return rows.map((row) => row.id);
   }
 
   public async getOrphanedQueries(): Promise<string[]> {
-    const rows = await this.driver.query('select id from from system.queue WHERE created <= DATE_SUB(NOW(), interval \'1 minute\') AND status = ?', ['Active']);
+    const rows = await this.driver.query('select id from from system.queue WHERE created <= DATE_SUB(NOW(), interval \'1 minute\') AND status = ? and prefix = ?', [
+      'Active',
+      this.options.redisQueuePrefix
+    ]);
     return rows.map((row) => row.id);
   }
 
   public async getQueriesToCancel(): Promise<string[]> {
     // TODO: It's better to introduce single command which cancel all orhaped & stalled queries and return it back
-    const rows = await this.driver.query('select id from system.queue WHERE (created <= DATE_SUB(NOW(), interval \'1 minute\') AND status = ?) OR (created <= DATE_SUB(NOW(), interval \'1 minute\') AND status = ?)', ['Pending', 'Active']);
+    const rows = await this.driver.query('select id from system.queue WHERE prefix = ? AND ((created <= DATE_SUB(NOW(), interval \'1 minute\') AND status = ?) OR (created <= DATE_SUB(NOW(), interval \'1 minute\') AND status = ?))', [
+      this.options.redisQueuePrefix,
+      'Pending',
+      'Active'
+    ]);
     return rows.map((row) => row.id);
   }
 
   public async getQueryDef(queryKey: string): Promise<QueryDef> {
-    const rows = await this.driver.query('select value from system.queue where id = ?', [this.getQueryKey(queryKey)]);
+    const rows = await this.driver.query('QUEUE GET ?', [
+      this.prefixKey(this.redisHash(queryKey))
+    ]);
     if (rows && rows.length) {
-      return JSON.parse(rows[0].value);
+      return [JSON.parse(rows[0].value)];
     }
 
-    throw new Error(`Unable to find query def for id: "${this.getQueryKey(queryKey)}"`);
+    throw new Error(`Unable to find query def for id: "${this.prefixKey(this.redisHash(queryKey))}"`);
   }
 
   public async getToProcessQueries(): Promise<string[]> {
-    const rows = await this.driver.query('select id from system.queue where status = ?', ['Pending']);
+    const rows = await this.driver.query('select id from system.queue where prefix = ? AND status = ?', [
+      this.options.redisQueuePrefix,
+      'Pending'
+    ]);
     return rows.map((row) => row.id);
   }
 
@@ -158,11 +180,11 @@ class CubestoreQueueDriverConnection implements LocalQueueDriverConnectionInterf
   public async retrieveForProcessing(queryKey: string, _processingId: string): Promise<RetrieveForProcessingResponse> {
     const rows = await this.driver.query('QUEUE RETRIEVE CONCURRENCY ? ?', [
       this.options.concurrency,
-      this.getQueryKey(queryKey),
+      this.prefixKey(queryKey),
     ]);
     if (rows && rows.length) {
       const addedCount = 1;
-      const active = [this.getQueryKey(queryKey)];
+      const active = [this.redisHash(queryKey)];
       const toProcess = 0;
       const lockAcquired = true;
       const def = JSON.parse(rows[0].value);
@@ -178,10 +200,10 @@ class CubestoreQueueDriverConnection implements LocalQueueDriverConnectionInterf
   public async getResultBlocking(queryKey: string): Promise<QueryDef | null> {
     const rows = await this.driver.query('QUEUE RESULT_BLOCKING ? ?', [
       this.options.continueWaitTimeout * 1000,
-      this.getQueryKey(queryKey),
+      this.prefixKey(this.redisHash(queryKey)),
     ]);
     console.log('getResultBlocking', {
-      queryKey: this.getQueryKey(queryKey),
+      queryKey: this.prefixKey(this.redisHash(queryKey)),
       rows
     });
 
@@ -194,12 +216,12 @@ class CubestoreQueueDriverConnection implements LocalQueueDriverConnectionInterf
 
   public async setResultAndRemoveQuery(queryKey: string, executionResult: any, processingId: any): Promise<boolean> {
     console.log('setResultAndRemoveQuery', {
-      queryKey,
+      queryKey: this.prefixKey(queryKey),
       executionResult
     });
 
     await this.driver.query('QUEUE ACK ? ? ', [
-      this.getQueryKey(queryKey),
+      this.prefixKey(queryKey),
       JSON.stringify(executionResult)
     ]);
 
@@ -207,10 +229,10 @@ class CubestoreQueueDriverConnection implements LocalQueueDriverConnectionInterf
   }
 
   public async updateHeartBeat(queryKey: string): Promise<void> {
-    console.log('updateHeartBeat', this.getQueryKey(queryKey));
+    console.log('updateHeartBeat', this.prefixKey(queryKey));
 
     await this.driver.query('QUEUE HEARTBEAT ?', [
-      this.getQueryKey(queryKey)
+      this.prefixKey(queryKey)
     ]);
   }
 }
@@ -222,7 +244,7 @@ export class CubeStoreQueueDriver implements QueueDriverInterface {
   ) {}
 
   public redisHash(queryKey: QueryId) {
-    return `${this.options.redisQueuePrefix}:${hashQueryKey(queryKey)}`;
+    return hashQueryKey(queryKey);
   }
 
   public async createConnection(): Promise<CubestoreQueueDriverConnection> {

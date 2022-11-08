@@ -1165,6 +1165,19 @@ impl SqlService for SqlServiceImpl {
 
                 Ok(Arc::new(DataFrame::new(vec![], vec![])))
             }
+            CubeStoreStatement::QueueGet { key } => {
+                let row = self.db.queue_get(key.value).await?;
+                if let Some(row) = row {
+                    Ok(Arc::new(DataFrame::new(
+                        vec![Column::new("value".to_string(), ColumnType::String, 0)],
+                        vec![Row::new(vec![TableValue::String(
+                            row.get_row().get_value().clone(),
+                        )])],
+                    )))
+                } else {
+                    Ok(Arc::new(DataFrame::new(vec![], vec![])))
+                }
+            }
             CubeStoreStatement::QueueRetrieve {
                 key,
                 concurrency: _,

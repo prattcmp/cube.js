@@ -447,7 +447,7 @@ export class QueryQueue {
       }
       const activated = activeKeys && activeKeys.indexOf(this.redisHash(queryKey)) !== -1;
       if (!query) {
-        query = await redisClient.getQueryDef(this.redisHash(queryKey));
+        query = await redisClient.getQueryDef(queryKey);
       }
 
       console.log('processQuery', {

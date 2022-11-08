@@ -36,6 +36,14 @@ impl QueueItem {
         &self.prefix
     }
 
+    pub fn get_path(&self) -> String {
+        if let Some(prefix) = &self.prefix {
+            format!("{}:{}", prefix, self.key)
+        } else {
+            self.key.clone()
+        }
+    }
+
     pub fn get_value(&self) -> &String {
         &self.value
     }
@@ -66,7 +74,7 @@ impl QueueItem {
 
 #[derive(Clone, Copy, Debug)]
 pub(crate) enum QueueItemRocksIndex {
-    ByKey = 1,
+    ByPath = 1,
     ByStatus = 2,
 }
 
@@ -76,7 +84,7 @@ rocks_table_impl!(
     TableId::QueueItems,
     {
         vec![
-            Box::new(QueueItemRocksIndex::ByKey),
+            Box::new(QueueItemRocksIndex::ByPath),
             Box::new(QueueItemRocksIndex::ByStatus),
         ]
     },
@@ -85,7 +93,7 @@ rocks_table_impl!(
 
 #[derive(Hash, Clone, Debug)]
 pub enum QueueItemIndexKey {
-    ByKey(String),
+    ByPath(String),
     ByStatus(QueueItemStatus),
 }
 
@@ -94,14 +102,14 @@ base_rocks_secondary_index!(QueueItem, QueueItemRocksIndex);
 impl RocksSecondaryIndex<QueueItem, QueueItemIndexKey> for QueueItemRocksIndex {
     fn typed_key_by(&self, row: &QueueItem) -> QueueItemIndexKey {
         match self {
-            QueueItemRocksIndex::ByKey => QueueItemIndexKey::ByKey(row.get_key().clone()),
+            QueueItemRocksIndex::ByPath => QueueItemIndexKey::ByPath(row.get_path()),
             QueueItemRocksIndex::ByStatus => QueueItemIndexKey::ByStatus(row.get_status().clone()),
         }
     }
 
     fn key_to_bytes(&self, key: &QueueItemIndexKey) -> Vec<u8> {
         match key {
-            QueueItemIndexKey::ByKey(s) => s.as_bytes().to_vec(),
+            QueueItemIndexKey::ByPath(s) => s.as_bytes().to_vec(),
             QueueItemIndexKey::ByStatus(s) => {
                 let mut r = Vec::with_capacity(1);
 
@@ -118,14 +126,14 @@ impl RocksSecondaryIndex<QueueItem, QueueItemIndexKey> for QueueItemRocksIndex {
 
     fn is_unique(&self) -> bool {
         match self {
-            QueueItemRocksIndex::ByKey => true,
+            QueueItemRocksIndex::ByPath => true,
             QueueItemRocksIndex::ByStatus => false,
         }
     }
 
     fn version(&self) -> u32 {
         match self {
-            QueueItemRocksIndex::ByKey => 1,
+            QueueItemRocksIndex::ByPath => 1,
             QueueItemRocksIndex::ByStatus => 1,
         }
     }
