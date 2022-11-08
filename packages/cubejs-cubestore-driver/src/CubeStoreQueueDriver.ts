@@ -6,11 +6,15 @@ import {
   RetrieveForProcessingResponse,
   QueueDriverOptions,
   AddToQueueQuery,
-  AddToQueueOptions,
+  AddToQueueOptions, QueryId,
 } from '@cubejs-backend/base-driver';
 
 import crypto from 'crypto';
 import { CubeStoreDriver } from './CubeStoreDriver';
+
+function hashQueryKey(queryKey: QueryId) {
+  return crypto.createHash('md5').update(JSON.stringify(queryKey)).digest('hex');
+}
 
 class CubestoreQueueDriverConnection implements LocalQueueDriverConnectionInterface {
   public constructor(
@@ -20,18 +24,8 @@ class CubestoreQueueDriverConnection implements LocalQueueDriverConnectionInterf
     console.log(options);
   }
 
-  protected getKey(suffix: string, queryKey?: string): string {
-    if (queryKey) {
-      return `${suffix}:${this.options.redisQueuePrefix}:${this.redisHash(queryKey)}`;
-    } else {
-      return `${suffix}:${this.options.redisQueuePrefix}`;
-    }
-  }
-
-  public redisHash(queryKey) {
-    return typeof queryKey === 'string' && queryKey.length < 256 ?
-      queryKey :
-      crypto.createHash('md5').update(JSON.stringify(queryKey)).digest('hex');
+  protected getQueryKey(queryKey: QueryId): string {
+    return `${this.options.redisQueuePrefix}:${hashQueryKey(queryKey)}`;
   }
 
   public async addToQueue(keyScore: number, queryKey: string | [string, any[]], orphanedTime: any, queryHandler: string, query: AddToQueueQuery, priority: number, options: AddToQueueOptions): Promise<unknown> {
@@ -54,7 +48,7 @@ class CubestoreQueueDriverConnection implements LocalQueueDriverConnectionInterf
 
     const _rows = await this.driver.query(`QUEUE ADD PRIORITY ? ? ?`, [
       priority,
-      this.redisHash(queryKey),
+      this.getQueryKey(queryKey),
       JSON.stringify(data)
     ]);
 
@@ -74,7 +68,7 @@ class CubestoreQueueDriverConnection implements LocalQueueDriverConnectionInterf
 
   public async cancelQuery(queryKey: string): Promise<[QueryDef]> {
     const rows = await this.driver.query('QUEUE CANCEL ?', [
-      this.redisHash(queryKey)
+      this.getQueryKey(queryKey)
     ]);
     if (rows && rows.length) {
       return [JSON.parse(rows[0].value)];
@@ -94,7 +88,7 @@ class CubestoreQueueDriverConnection implements LocalQueueDriverConnectionInterf
 
   public async getNextProcessingId(): Promise<number | string> {
     const rows = await this.driver.query('CACHE INCR ?', [
-      this.getKey('PROCESSING_COUNTER')
+      `${this.options.redisQueuePrefix}:PROCESSING_COUNTER`
     ]);
     if (rows && rows.length) {
       return rows[0].value;
@@ -133,12 +127,12 @@ class CubestoreQueueDriverConnection implements LocalQueueDriverConnectionInterf
   }
 
   public async getQueryDef(queryKey: string): Promise<QueryDef> {
-    const rows = await this.driver.query('select value from system.queue where id = ?', [this.redisHash(queryKey)]);
+    const rows = await this.driver.query('select value from system.queue where id = ?', [this.getQueryKey(queryKey)]);
     if (rows && rows.length) {
       return JSON.parse(rows[0].value);
     }
 
-    throw new Error(`Unable to find query def for id: "${this.redisHash(queryKey)}"`);
+    throw new Error(`Unable to find query def for id: "${this.getQueryKey(queryKey)}"`);
   }
 
   public async getToProcessQueries(): Promise<string[]> {
@@ -164,11 +158,11 @@ class CubestoreQueueDriverConnection implements LocalQueueDriverConnectionInterf
   public async retrieveForProcessing(queryKey: string, _processingId: string): Promise<RetrieveForProcessingResponse> {
     const rows = await this.driver.query('QUEUE RETRIEVE CONCURRENCY ? ?', [
       this.options.concurrency,
-      this.redisHash(queryKey),
+      this.getQueryKey(queryKey),
     ]);
     if (rows && rows.length) {
       const addedCount = 1;
-      const active = [this.redisHash(queryKey)];
+      const active = [this.getQueryKey(queryKey)];
       const toProcess = 0;
       const lockAcquired = true;
       const def = JSON.parse(rows[0].value);
@@ -184,10 +178,10 @@ class CubestoreQueueDriverConnection implements LocalQueueDriverConnectionInterf
   public async getResultBlocking(queryKey: string): Promise<QueryDef | null> {
     const rows = await this.driver.query('QUEUE RESULT_BLOCKING ? ?', [
       this.options.continueWaitTimeout * 1000,
-      this.redisHash(queryKey),
+      this.getQueryKey(queryKey),
     ]);
     console.log('getResultBlocking', {
-      queryKey: this.redisHash(queryKey),
+      queryKey: this.getQueryKey(queryKey),
       rows
     });
 
@@ -204,13 +198,8 @@ class CubestoreQueueDriverConnection implements LocalQueueDriverConnectionInterf
       executionResult
     });
 
-    await this.driver.query('CACHE SET TTL 3600 ? ?', [
-      this.getKey('result', queryKey),
-      JSON.stringify(executionResult),
-    ]);
-
     await this.driver.query('QUEUE ACK ? ? ', [
-      this.redisHash(queryKey),
+      this.getQueryKey(queryKey),
       JSON.stringify(executionResult)
     ]);
 
@@ -218,10 +207,10 @@ class CubestoreQueueDriverConnection implements LocalQueueDriverConnectionInterf
   }
 
   public async updateHeartBeat(queryKey: string): Promise<void> {
-    console.log('updateHeartBeat', this.redisHash(queryKey));
+    console.log('updateHeartBeat', this.getQueryKey(queryKey));
 
     await this.driver.query('QUEUE HEARTBEAT ?', [
-      this.redisHash(queryKey)
+      this.getQueryKey(queryKey)
     ]);
   }
 }
@@ -232,17 +221,15 @@ export class CubeStoreQueueDriver implements QueueDriverInterface {
     protected readonly options: QueueDriverOptions
   ) {}
 
-  public redisHash(queryKey) {
-    return typeof queryKey === 'string' && queryKey.length < 256 ?
-      queryKey :
-      crypto.createHash('md5').update(JSON.stringify(queryKey)).digest('hex');
+  public redisHash(queryKey: QueryId) {
+    return `${this.options.redisQueuePrefix}:${hashQueryKey(queryKey)}`;
   }
 
   public async createConnection(): Promise<CubestoreQueueDriverConnection> {
     return new CubestoreQueueDriverConnection(this.driver, this.options);
   }
 
-  public async release(connection: CubestoreQueueDriverConnection): Promise<void> {
+  public async release(): Promise<void> {
     // nothing to release
   }
 }

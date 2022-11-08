@@ -97,7 +97,6 @@ export class QueryQueue {
       // query (initialized by the /cubejs-system/v1/pre-aggregations/jobs
       // endpoint).
       let result = !query.forceBuild && await queueConnection.getResult(queryKey);
-
       if (result) {
         return this.parseResult(result);
       }
