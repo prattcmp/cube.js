@@ -9,8 +9,16 @@ use rocksdb::DB;
 use serde::{Deserialize, Deserializer};
 
 impl QueueItem {
-    pub fn new(key: String, value: String, status: QueueItemStatus, priority: i64) -> Self {
+    pub fn new(path: String, value: String, status: QueueItemStatus, priority: i64) -> Self {
+        let parts: Vec<&str> = path.rsplitn(2, ":").collect();
+
+        let (prefix, key) = match parts.len() {
+            2 => (Some(parts[1].to_string()), parts[0].to_string()),
+            _ => (None, path),
+        };
+
         QueueItem {
+            prefix,
             key,
             value,
             status,
@@ -22,6 +30,10 @@ impl QueueItem {
 
     pub fn get_key(&self) -> &String {
         &self.key
+    }
+
+    pub fn get_prefix(&self) -> &Option<String> {
+        &self.prefix
     }
 
     pub fn get_value(&self) -> &String {

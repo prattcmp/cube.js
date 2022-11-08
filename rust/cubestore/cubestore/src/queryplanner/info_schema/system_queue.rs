@@ -28,6 +28,14 @@ impl InfoSchemaTableDef for InfoSchemaQueueDef {
                 }),
             ),
             (
+                Field::new("prefix", DataType::Utf8, false),
+                Box::new(|items| {
+                    Arc::new(StringArray::from_iter(
+                        items.iter().map(|row| row.get_row().get_prefix().clone()),
+                    ))
+                }),
+            ),
+            (
                 Field::new(
                     "created",
                     DataType::Timestamp(TimeUnit::Nanosecond, None),

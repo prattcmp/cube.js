@@ -779,6 +779,7 @@ pub enum QueueItemStatus {
 data_frame_from! {
 #[derive(Clone, Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct QueueItem {
+    prefix: Option<String>,
     key: String,
     value: String,
     #[serde(default = "QueueItem::status_default")]
@@ -2746,6 +2747,10 @@ impl RocksMetaStoreListener {
         mut self,
         key: String,
     ) -> Result<Option<AckQueueItem>, CubeError> {
+        // QuueueItem->result
+        // 1. get result
+        // 2. receive result
+
         loop {
             let event = self.receiver.recv().await?;
             if let MetaStoreEvent::AckQueueItem(payload) = &event {
