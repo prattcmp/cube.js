@@ -1160,6 +1160,11 @@ impl SqlService for SqlServiceImpl {
 
                 Ok(Arc::new(DataFrame::new(vec![], vec![])))
             }
+            CubeStoreStatement::QueueMergeExtra { key, payload } => {
+                self.db.queue_merge_extra(key.value, payload).await?;
+
+                Ok(Arc::new(DataFrame::new(vec![], vec![])))
+            }
             CubeStoreStatement::QueueAck { key, result } => {
                 self.db.queue_ack(key.value, result).await?;
 
@@ -1169,10 +1174,18 @@ impl SqlService for SqlServiceImpl {
                 let row = self.db.queue_get(key.value).await?;
                 if let Some(row) = row {
                     Ok(Arc::new(DataFrame::new(
-                        vec![Column::new("value".to_string(), ColumnType::String, 0)],
-                        vec![Row::new(vec![TableValue::String(
-                            row.get_row().get_value().clone(),
-                        )])],
+                        vec![
+                            Column::new("value".to_string(), ColumnType::String, 0),
+                            Column::new("extra".to_string(), ColumnType::String, 1),
+                        ],
+                        vec![Row::new(vec![
+                            TableValue::String(row.get_row().get_value().clone()),
+                            if let Some(extra) = row.get_row().get_extra() {
+                                TableValue::String(extra.clone())
+                            } else {
+                                TableValue::Null
+                            },
+                        ])],
                     )))
                 } else {
                     Ok(Arc::new(DataFrame::new(vec![], vec![])))

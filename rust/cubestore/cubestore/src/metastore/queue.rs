@@ -2,11 +2,31 @@ use super::{
     BaseRocksSecondaryIndex, ColumnFamilyName, IdRow, IndexId, MetaStoreEvent, QueueItem,
     QueueItemStatus, RocksSecondaryIndex, RocksTable, TableId,
 };
-use crate::{base_rocks_secondary_index, rocks_table_impl};
+use crate::{base_rocks_secondary_index, rocks_table_impl, CubeError};
 
 use chrono::{DateTime, Utc};
 use rocksdb::DB;
 use serde::{Deserialize, Deserializer};
+
+fn merge(a: serde_json::Value, b: serde_json::Value) -> Option<serde_json::Value> {
+    match (a, b) {
+        (mut root @ serde_json::Value::Object(_), serde_json::Value::Object(b)) => {
+            let r = root.as_object_mut().unwrap();
+            for (k, v) in b {
+                if r.contains_key(&k) {
+                    r.remove(&k);
+                }
+
+                r.insert(k, v);
+            }
+
+            Some(root)
+        }
+        // Special case to truncate extra
+        (a, serde_json::Value::Null) => None,
+        (a, b) => Some(b),
+    }
+}
 
 impl QueueItem {
     pub fn new(path: String, value: String, status: QueueItemStatus, priority: i64) -> Self {
@@ -23,6 +43,7 @@ impl QueueItem {
             value,
             status,
             priority,
+            extra: None,
             created: Utc::now(),
             heartbeat: None,
         }
@@ -48,6 +69,10 @@ impl QueueItem {
         &self.value
     }
 
+    pub fn get_extra(&self) -> &Option<String> {
+        &self.extra
+    }
+
     pub fn get_status(&self) -> &QueueItemStatus {
         &self.status
     }
@@ -69,6 +94,23 @@ impl QueueItem {
         new.heartbeat = Some(Utc::now());
 
         new
+    }
+
+    pub fn merge_extra(&self, payload: String) -> Result<Self, CubeError> {
+        let mut new = self.clone();
+
+        if let Some(extra) = &self.extra {
+            let prev = serde_json::from_str(&extra)?;
+            let next = serde_json::from_str(&payload)?;
+
+            let extra = merge(prev, next);
+
+            new.extra = extra.map(|v| v.to_string())
+        } else {
+            new.extra = Some(payload);
+        }
+
+        Ok(new)
     }
 }
 

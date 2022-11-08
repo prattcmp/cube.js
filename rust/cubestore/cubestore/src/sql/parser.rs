@@ -92,6 +92,10 @@ pub enum Statement {
         key: Ident,
         result: String,
     },
+    QueueMergeExtra {
+        key: Ident,
+        payload: String,
+    },
     QueueRetrieve {
         key: Ident,
         concurrency: u32,
@@ -292,6 +296,10 @@ impl<'a> CubeStoreParser<'a> {
             "ack" => Ok(Statement::QueueAck {
                 key: self.parser.parse_identifier()?,
                 result: self.parser.parse_literal_string()?,
+            }),
+            "merge_extra" => Ok(Statement::QueueMergeExtra {
+                key: self.parser.parse_identifier()?,
+                payload: self.parser.parse_literal_string()?,
             }),
             "get" => Ok(Statement::QueueGet {
                 key: self.parser.parse_identifier()?,

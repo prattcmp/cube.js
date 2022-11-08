@@ -148,7 +148,7 @@ class CubestoreQueueDriverConnection implements LocalQueueDriverConnectionInterf
       this.prefixKey(this.redisHash(queryKey))
     ]);
     if (rows && rows.length) {
-      return [JSON.parse(rows[0].value)];
+      return Object.assign(JSON.parse(rows[0].value), JSON.parse(rows[0].extra));
     }
 
     throw new Error(`Unable to find query def for id: "${this.prefixKey(this.redisHash(queryKey))}"`);
@@ -169,7 +169,11 @@ class CubestoreQueueDriverConnection implements LocalQueueDriverConnectionInterf
       processingId
     });
 
-    //
+    await this.driver.query('QUEUE MERGE_EXTRA ? ?', [
+      this.prefixKey(queryKey),
+      JSON.stringify(toUpdate)
+    ]);
+
     return true;
   }
 

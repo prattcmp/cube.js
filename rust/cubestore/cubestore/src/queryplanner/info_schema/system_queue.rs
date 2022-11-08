@@ -89,6 +89,14 @@ impl InfoSchemaTableDef for InfoSchemaQueueDef {
                     ))
                 }),
             ),
+            (
+                Field::new("extra", DataType::Utf8, true),
+                Box::new(|items| {
+                    Arc::new(StringArray::from_iter(
+                        items.iter().map(|row| row.get_row().get_extra().clone()),
+                    ))
+                }),
+            ),
         ]
     }
 }

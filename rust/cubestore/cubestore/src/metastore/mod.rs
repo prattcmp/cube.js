@@ -781,7 +781,9 @@ data_frame_from! {
 pub struct QueueItem {
     prefix: Option<String>,
     key: String,
+    // Immutable field
     value: String,
+    extra: Option<String>,
     #[serde(default = "QueueItem::status_default")]
     status: QueueItemStatus,
     #[serde(default)]
@@ -1265,6 +1267,7 @@ pub trait MetaStore: DIService + Send + Sync {
         key: String,
         timeout: u64,
     ) -> Result<Option<AckQueueItem>, CubeError>;
+    async fn queue_merge_extra(&self, key: String, payload: String) -> Result<(), CubeError>;
 
     // Force compaction for specific column family
     async fn cf_compaction(&self, cf: ColumnFamilyName) -> Result<(), CubeError>;
@@ -4393,6 +4396,30 @@ impl MetaStore for RocksMetaStore {
         } else {
             Ok(None)
         }
+    }
+
+    async fn queue_merge_extra(&self, key: String, payload: String) -> Result<(), CubeError> {
+        self.write_operation_cache(move |db_ref, batch_pipe| {
+            let queue_schema = QueueItemRocksTable::new(db_ref.clone());
+            let index_key = QueueItemIndexKey::ByPath(key.clone());
+            let id_row_opt = queue_schema
+                .get_single_opt_row_by_index(&index_key, &QueueItemRocksIndex::ByPath)?;
+
+            if let Some(id_row) = id_row_opt {
+                let new = id_row.get_row().merge_extra(payload)?;
+
+                queue_schema.update(id_row.id, new, id_row.get_row(), batch_pipe)?;
+
+                Ok(())
+            } else {
+                // Err(CubeError::user(format!(
+                //     "Unable to find queue with id: {}",
+                //     key
+                // )))
+                Ok(())
+            }
+        })
+        .await
     }
 
     async fn queue_heartbeat(&self, key: String) -> Result<(), CubeError> {
