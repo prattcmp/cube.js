@@ -33,6 +33,21 @@ sequenceDiagram
         Note over QueueQueue,BackgroundQueryQueue: Async call to procesQuery, which doesnt block here
     end
 
+    alt lookUpInActive: Lookup query in processing
+        QueueQueue->>QueueDriverInterface: getQueryDef
+        activate CubeStore
+        QueueDriverInterface->>CubeStore: QUEUE GET ?key
+        CubeStore-->>+QueueQueue: QueryDef|null
+        deactivate CubeStore
+
+        QueueQueue->>QueueDriverInterface: getQueryStageState
+        activate CubeStore
+        QueueDriverInterface->>CubeStore: TODO
+        CubeStore-->>+QueueQueue: TODO
+        deactivate CubeStore
+        Note over QueueQueue,QueueDriverInterface: Show waiting for query
+    end
+
     QueueQueue->>QueueDriverInterface: getResultBlocking
     activate CubeStore
     QueueDriverInterface->>CubeStore: QUEUE RESULT_BLOCKING ?timeout ?key
