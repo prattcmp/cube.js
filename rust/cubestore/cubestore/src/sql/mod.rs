@@ -1191,6 +1191,39 @@ impl SqlService for SqlServiceImpl {
                     Ok(Arc::new(DataFrame::new(vec![], vec![])))
                 }
             }
+            CubeStoreStatement::QueueList {
+                prefix,
+                with_payload,
+            } => {
+                let rows = self.db.queue_list(prefix.value).await?;
+
+                let mut columns = vec![
+                    Column::new("id".to_string(), ColumnType::String, 0),
+                    Column::new("status".to_string(), ColumnType::String, 1),
+                ];
+
+                if with_payload {
+                    columns.push(Column::new("payload".to_string(), ColumnType::String, 2));
+                }
+
+                Ok(Arc::new(DataFrame::new(
+                    columns,
+                    rows.into_iter()
+                        .map(|item| {
+                            let mut res = vec![
+                                TableValue::String(item.get_row().get_key().clone()),
+                                TableValue::String(item.get_row().get_status().to_string()),
+                            ];
+
+                            if with_payload {
+                                res.push(TableValue::String(item.get_row().get_value().clone()));
+                            }
+
+                            Row::new(res)
+                        })
+                        .collect(),
+                )))
+            }
             CubeStoreStatement::QueueRetrieve {
                 key,
                 concurrency: _,
@@ -3170,7 +3203,7 @@ mod tests {
                 ).await.unwrap();
 
             let result = service.exec_query(
-                "EXPLAIN SELECT platform, sum(amount) from foo.orders where age > 15 group by platform" 
+                "EXPLAIN SELECT platform, sum(amount) from foo.orders where age > 15 group by platform"
             ).await.unwrap();
             assert_eq!(result.len(), 1);
             assert_eq!(result.get_columns().len(), 1);
@@ -3222,7 +3255,7 @@ mod tests {
                     ).await.unwrap();
 
                 let result = service.exec_query(
-                    "EXPLAIN ANALYZE SELECT platform, sum(amount) from foo.orders where age > 15 group by platform" 
+                    "EXPLAIN ANALYZE SELECT platform, sum(amount) from foo.orders where age > 15 group by platform"
                     ).await.unwrap();
 
                 assert_eq!(result.len(), 2);

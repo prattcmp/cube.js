@@ -1,7 +1,7 @@
 export type QueryDef = unknown;
 export type QueryId = string | [string, any[]];
 
-export type QueryStageStateResponse = [active: string[], toProcess: string] | [active: string[], toProcess: string, defs: QueryDef];
+export type QueryStageStateResponse = [active: string[], toProcess: string[]] | [active: string[], toProcess: string[], defs: QueryDef];
 export type RetrieveForProcessingResponse = [added: any, removed: any, active: string[], toProcess: any, def: QueryDef, lockAquired: boolean] | null;
 export interface AddToQueueQuery {
   isJob: boolean,

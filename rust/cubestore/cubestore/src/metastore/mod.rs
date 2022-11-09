@@ -776,6 +776,16 @@ pub enum QueueItemStatus {
     Finished = 2,
 }
 
+impl ToString for QueueItemStatus {
+    fn to_string(&self) -> String {
+        match self {
+            QueueItemStatus::Pending => "pending".to_string(),
+            QueueItemStatus::Active => "active".to_string(),
+            QueueItemStatus::Finished => "finished".to_string(),
+        }
+    }
+}
+
 data_frame_from! {
 #[derive(Clone, Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct QueueItem {
@@ -1258,6 +1268,7 @@ pub trait MetaStore: DIService + Send + Sync {
     async fn queue_add(&self, item: QueueItem) -> Result<bool, CubeError>;
     async fn queue_truncate(&self) -> Result<(), CubeError>;
     async fn queue_get(&self, key: String) -> Result<Option<IdRow<QueueItem>>, CubeError>;
+    async fn queue_list(&self, prefix: String) -> Result<Vec<IdRow<QueueItem>>, CubeError>;
     async fn queue_cancel(&self, key: String) -> Result<Option<IdRow<QueueItem>>, CubeError>;
     async fn queue_heartbeat(&self, key: String) -> Result<(), CubeError>;
     async fn queue_retrieve(&self, key: String) -> Result<Option<IdRow<QueueItem>>, CubeError>;
@@ -4282,6 +4293,15 @@ impl MetaStore for RocksMetaStore {
             let queue_schema = QueueItemRocksTable::new(db_ref.clone());
             let index_key = QueueItemIndexKey::ByPath(key);
             queue_schema.get_single_opt_row_by_index(&index_key, &QueueItemRocksIndex::ByPath)
+        })
+        .await
+    }
+
+    async fn queue_list(&self, prefix: String) -> Result<Vec<IdRow<QueueItem>>, CubeError> {
+        self.read_operation_cache(move |db_ref| {
+            let queue_schema = QueueItemRocksTable::new(db_ref.clone());
+            let index_key = QueueItemIndexKey::ByPrefix(prefix);
+            queue_schema.get_rows_by_index(&index_key, &QueueItemRocksIndex::ByPrefix)
         })
         .await
     }

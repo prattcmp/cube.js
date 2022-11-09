@@ -105,10 +105,15 @@ class CubestoreQueueDriverConnection implements LocalQueueDriverConnectionInterf
   }
 
   public async getQueryStageState(onlyKeys: boolean): Promise<QueryStageStateResponse> {
-    console.log(onlyKeys);
-    // throw new Error(`Unimplemented getQueryStageState, onlyKeys: ${onlyKeys}`);
+    const rows = await this.driver.query(`QUEUE LIST ${onlyKeys ? '' : ' WITH_PAYLOAD '} ?`, [
+      this.options.redisQueuePrefix
+    ]);
 
-    return <any>[[], [], []];
+    const defs = onlyKeys ? rows.map((row) => row.payload) : [];
+    const toProcess = rows.filter((row) => row.status === 'pending').map((row) => row.id);
+    const active = rows.filter((row) => row.status === 'active').map((row) => row.id);
+
+    return [toProcess, active, defs];
   }
 
   public async getResult(queryKey: string): Promise<unknown> {

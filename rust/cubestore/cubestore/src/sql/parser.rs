@@ -82,6 +82,10 @@ pub enum Statement {
     QueueGet {
         key: Ident,
     },
+    QueueList {
+        prefix: Ident,
+        with_payload: bool,
+    },
     QueueCancel {
         key: Ident,
     },
@@ -304,6 +308,14 @@ impl<'a> CubeStoreParser<'a> {
             "get" => Ok(Statement::QueueGet {
                 key: self.parser.parse_identifier()?,
             }),
+            "list" => {
+                let with_payload = self.parse_custom_token(&"with_payload");
+
+                Ok(Statement::QueueList {
+                    prefix: self.parser.parse_identifier()?,
+                    with_payload,
+                })
+            }
             "retrieve" => {
                 let concurrency = if self.parse_custom_token(&"concurrency") {
                     match self.parser.parse_number_value()? {

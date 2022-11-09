@@ -118,6 +118,7 @@ impl QueueItem {
 pub(crate) enum QueueItemRocksIndex {
     ByPath = 1,
     ByStatus = 2,
+    ByPrefix = 3,
 }
 
 rocks_table_impl!(
@@ -128,6 +129,7 @@ rocks_table_impl!(
         vec![
             Box::new(QueueItemRocksIndex::ByPath),
             Box::new(QueueItemRocksIndex::ByStatus),
+            Box::new(QueueItemRocksIndex::ByPrefix),
         ]
     },
     ColumnFamilyName::Cache
@@ -137,6 +139,7 @@ rocks_table_impl!(
 pub enum QueueItemIndexKey {
     ByPath(String),
     ByStatus(QueueItemStatus),
+    ByPrefix(String),
 }
 
 base_rocks_secondary_index!(QueueItem, QueueItemRocksIndex);
@@ -146,12 +149,20 @@ impl RocksSecondaryIndex<QueueItem, QueueItemIndexKey> for QueueItemRocksIndex {
         match self {
             QueueItemRocksIndex::ByPath => QueueItemIndexKey::ByPath(row.get_path()),
             QueueItemRocksIndex::ByStatus => QueueItemIndexKey::ByStatus(row.get_status().clone()),
+            QueueItemRocksIndex::ByPrefix => {
+                QueueItemIndexKey::ByPrefix(if let Some(prefix) = row.get_prefix() {
+                    prefix.clone()
+                } else {
+                    "".to_string()
+                })
+            }
         }
     }
 
     fn key_to_bytes(&self, key: &QueueItemIndexKey) -> Vec<u8> {
         match key {
             QueueItemIndexKey::ByPath(s) => s.as_bytes().to_vec(),
+            QueueItemIndexKey::ByPrefix(s) => s.as_bytes().to_vec(),
             QueueItemIndexKey::ByStatus(s) => {
                 let mut r = Vec::with_capacity(1);
 
@@ -170,6 +181,7 @@ impl RocksSecondaryIndex<QueueItem, QueueItemIndexKey> for QueueItemRocksIndex {
         match self {
             QueueItemRocksIndex::ByPath => true,
             QueueItemRocksIndex::ByStatus => false,
+            QueueItemRocksIndex::ByPrefix => false,
         }
     }
 
@@ -177,6 +189,7 @@ impl RocksSecondaryIndex<QueueItem, QueueItemIndexKey> for QueueItemRocksIndex {
         match self {
             QueueItemRocksIndex::ByPath => 1,
             QueueItemRocksIndex::ByStatus => 1,
+            QueueItemRocksIndex::ByPrefix => 1,
         }
     }
 
