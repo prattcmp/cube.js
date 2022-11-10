@@ -597,7 +597,11 @@ pub struct Partition {
     #[serde(default)]
     suffix: Option<String>,
     #[serde(default)]
-    file_size: Option<u64>
+    file_size: Option<u64>,
+    #[serde(default)]
+    min: Option<Row>,
+    #[serde(default)]
+    max: Option<Row>
 }
 }
 
@@ -622,7 +626,11 @@ pub struct Chunk {
     #[serde(default)]
     suffix: Option<String>,
     #[serde(default)]
-    file_size: Option<u64>
+    file_size: Option<u64>,
+    #[serde(default)]
+    min: Option<Row>,
+    #[serde(default)]
+    max: Option<Row>
 }
 }
 
@@ -746,7 +754,7 @@ pub trait MetaStore: DIService + Send + Sync {
         &self,
         current_active: Vec<(IdRow<Partition>, Vec<IdRow<Chunk>>)>,
         new_active: Vec<(IdRow<Partition>, u64)>,
-        new_active_min_max: Vec<(u64, (Option<Row>, Option<Row>))>,
+        new_active_min_max: Vec<(u64, (Option<Row>, Option<Row>), (Option<Row>, Option<Row>))>,
     ) -> Result<(), CubeError>;
     async fn delete_partition(&self, partition_id: u64) -> Result<IdRow<Partition>, CubeError>;
     async fn mark_partition_warmed_up(&self, partition_id: u64) -> Result<(), CubeError>;
@@ -841,7 +849,9 @@ pub trait MetaStore: DIService + Send + Sync {
         &self,
         partition_id: u64,
         row_count: usize,
-        in_memory: bool,
+        min: Option<Row>,
+        max: Option<Row>,
+        in_memory: bool
     ) -> Result<IdRow<Chunk>, CubeError>;
     async fn get_chunk(&self, chunk_id: u64) -> Result<IdRow<Chunk>, CubeError>;
     async fn get_chunks_by_partition(
@@ -2393,7 +2403,7 @@ impl MetaStore for RocksMetaStore {
         &self,
         current_active: Vec<(IdRow<Partition>, Vec<IdRow<Chunk>>)>,
         new_active: Vec<(IdRow<Partition>, u64)>,
-        mut new_active_min_max: Vec<(u64, (Option<Row>, Option<Row>))>,
+        mut new_active_min_max: Vec<(u64, (Option<Row>, Option<Row>), (Option<Row>, Option<Row>))>,
     ) -> Result<(), CubeError> {
         trace!(
             "Swapping partitions: deactivating ({}), deactivating chunks ({}), activating ({})",
@@ -2412,8 +2422,8 @@ impl MetaStore for RocksMetaStore {
                 &current_active,
                 &new_active,
                 move |i, p| {
-                    let (rows, (min, max)) = take(&mut new_active_min_max[i]);
-                    p.update_min_max_and_row_count(min, max, rows)
+                    let (rows, (min_val, max_val), (min, max)) = take(&mut new_active_min_max[i]);
+                    p.update_min_max_and_row_count(min_val, max_val, rows, min, max)
                 },
                 |current_i| {
                     Err(CubeError::internal(format!(
@@ -3004,12 +3014,14 @@ impl MetaStore for RocksMetaStore {
         &self,
         partition_id: u64,
         row_count: usize,
+        min: Option<Row>,
+        max: Option<Row>,
         in_memory: bool,
     ) -> Result<IdRow<Chunk>, CubeError> {
         self.write_operation(move |db_ref, batch_pipe| {
             let rocks_chunk = ChunkRocksTable::new(db_ref.clone());
 
-            let chunk = Chunk::new(partition_id, row_count, in_memory);
+            let chunk = Chunk::new(partition_id, row_count, min, max, in_memory);
             let id_row = rocks_chunk.insert(chunk, batch_pipe)?;
 
             Ok(id_row)
@@ -5007,27 +5019,27 @@ mod tests {
 
             let mut source_ids: Vec<u64> = Vec::new();
             let ch = meta_store
-                .create_chunk(partition.get_id(), 10, true)
+                .create_chunk(partition.get_id(), 10, None, None, true)
                 .await
                 .unwrap();
             source_ids.push(ch.get_id());
             meta_store.chunk_uploaded(ch.get_id()).await.unwrap();
 
             let ch = meta_store
-                .create_chunk(partition.get_id(), 16, true)
+                .create_chunk(partition.get_id(), 16, None, None, true)
                 .await
                 .unwrap();
             source_ids.push(ch.get_id());
             meta_store.chunk_uploaded(ch.get_id()).await.unwrap();
 
             let dest_chunk = meta_store
-                .create_chunk(partition.get_id(), 26, true)
+                .create_chunk(partition.get_id(), 26, None, None, true)
                 .await
                 .unwrap();
             assert_eq!(dest_chunk.get_row().active(), false);
 
             let dest_chunk2 = meta_store
-                .create_chunk(partition.get_id(), 26, true)
+                .create_chunk(partition.get_id(), 26, None, None, true)
                 .await
                 .unwrap();
             assert_eq!(dest_chunk2.get_row().active(), false);
@@ -5053,14 +5065,14 @@ mod tests {
             //============= trying to use already active chunk as destination of swap ==============
             let mut source_ids: Vec<u64> = Vec::new();
             let ch = meta_store
-                .create_chunk(partition.get_id(), 10, true)
+                .create_chunk(partition.get_id(), 10, None, None, true)
                 .await
                 .unwrap();
             source_ids.push(ch.get_id());
             meta_store.chunk_uploaded(ch.get_id()).await.unwrap();
 
             let ch = meta_store
-                .create_chunk(partition.get_id(), 16, true)
+                .create_chunk(partition.get_id(), 16, None, None, true)
                 .await
                 .unwrap();
             source_ids.push(ch.get_id());
@@ -5129,14 +5141,14 @@ mod tests {
 
             let mut source_chunks: Vec<IdRow<Chunk>> = Vec::new();
             let ch = meta_store
-                .create_chunk(partition.get_id(), 10, true)
+                .create_chunk(partition.get_id(), 10, None, None, true)
                 .await
                 .unwrap();
             meta_store.chunk_uploaded(ch.get_id()).await.unwrap();
             source_chunks.push(ch);
 
             let ch = meta_store
-                .create_chunk(partition.get_id(), 16, true)
+                .create_chunk(partition.get_id(), 16, None, None, true)
                 .await
                 .unwrap();
             meta_store.chunk_uploaded(ch.get_id()).await.unwrap();
@@ -5151,7 +5163,7 @@ mod tests {
                 .swap_active_partitions(
                     vec![(partition.clone(), source_chunks.clone())],
                     vec![(dest_partition.clone(), 10)],
-                    vec![(26, (None, None))],
+                    vec![(26, (None, None), (None, None))],
                 )
                 .await
                 .unwrap();
@@ -5189,14 +5201,14 @@ mod tests {
 
             let mut source_chunks: Vec<IdRow<Chunk>> = Vec::new();
             let ch = meta_store
-                .create_chunk(partition.clone().get_id(), 10, true)
+                .create_chunk(partition.clone().get_id(), 10, None, None, true)
                 .await
                 .unwrap();
             meta_store.chunk_uploaded(ch.get_id()).await.unwrap();
             source_chunks.push(ch);
 
             let ch = meta_store
-                .create_chunk(partition.get_id(), 16, true)
+                .create_chunk(partition.get_id(), 16, None, None, true)
                 .await
                 .unwrap();
             meta_store.chunk_uploaded(ch.get_id()).await.unwrap();
@@ -5211,7 +5223,7 @@ mod tests {
                 .swap_active_partitions(
                     vec![(partition, source_chunks.clone())],
                     vec![(dest_partition.clone(), 10)],
-                    vec![(26, (None, None))],
+                    vec![(26, (None, None), (None, None))],
                 )
                 .await
             {
@@ -5233,13 +5245,13 @@ mod tests {
                 .unwrap()
                 .to_owned();
             let ch = meta_store
-                .create_chunk(partition.clone().get_id(), 10, true)
+                .create_chunk(partition.clone().get_id(), 10, None, None, true)
                 .await
                 .unwrap();
             source_chunks.push(ch);
 
             let ch = meta_store
-                .create_chunk(partition.get_id(), 16, true)
+                .create_chunk(partition.get_id(), 16, None, None, true)
                 .await
                 .unwrap();
             source_chunks.push(ch);
@@ -5255,7 +5267,7 @@ mod tests {
                 .swap_active_partitions(
                     vec![(partition, source_chunks.clone())],
                     vec![(dest_partition.clone(), 10)],
-                    vec![(dest_row_count, (None, None))],
+                    vec![(dest_row_count, (None, None), (None, None))],
                 )
                 .await
             {
@@ -5276,14 +5288,14 @@ mod tests {
                 .unwrap()
                 .to_owned();
             let ch = meta_store
-                .create_chunk(partition.clone().get_id(), 10, true)
+                .create_chunk(partition.clone().get_id(), 10, None, None, true)
                 .await
                 .unwrap();
             meta_store.chunk_uploaded(ch.get_id()).await.unwrap();
             source_chunks.push(ch);
 
             let ch = meta_store
-                .create_chunk(partition.get_id(), 16, true)
+                .create_chunk(partition.get_id(), 16, None, None, true)
                 .await
                 .unwrap();
             meta_store.chunk_uploaded(ch.get_id()).await.unwrap();
@@ -5295,7 +5307,7 @@ mod tests {
                 .swap_active_partitions(
                     vec![(partition.clone(), source_chunks.clone())],
                     vec![(partition.clone(), 10)],
-                    vec![(dest_row_count, (None, None))],
+                    vec![(dest_row_count, (None, None), (None, None))],
                 )
                 .await
             {
