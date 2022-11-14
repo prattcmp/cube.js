@@ -35,6 +35,7 @@ use tracing_futures::WithSubscriber;
 use cubehll::HllSketch;
 use parser::Statement as CubeStoreStatement;
 
+use crate::cachestore::CacheStore;
 use crate::cluster::{Cluster, JobEvent, JobResultListener};
 use crate::config::injection::DIService;
 use crate::config::ConfigObj;
@@ -152,6 +153,7 @@ impl SqlQueryContext {
 
 pub struct SqlServiceImpl {
     db: Arc<dyn MetaStore>,
+    cachestore: Arc<dyn CacheStore>,
     chunk_store: Arc<dyn ChunkDataStore>,
     remote_fs: Arc<dyn RemoteFs>,
     limits: Arc<ConcurrencyLimits>,
@@ -171,6 +173,7 @@ crate::di_service!(SqlServiceImpl, [SqlService]);
 impl SqlServiceImpl {
     pub fn new(
         db: Arc<dyn MetaStore>,
+        cachestore: Arc<dyn CacheStore>,
         chunk_store: Arc<dyn ChunkDataStore>,
         limits: Arc<ConcurrencyLimits>,
         query_planner: Arc<dyn QueryPlanner>,
@@ -186,6 +189,7 @@ impl SqlServiceImpl {
     ) -> Arc<SqlServiceImpl> {
         Arc::new(SqlServiceImpl {
             db,
+            cachestore,
             chunk_store,
             limits,
             query_planner,
@@ -1152,6 +1156,18 @@ impl SqlService for SqlServiceImpl {
             },
 
             CubeStoreStatement::Dump(q) => self.dump_select_inputs(query, q).await,
+
+            CubeStoreStatement::CacheIncr { path } => {
+                let row = self.cachestore.cache_incr(path.value).await?;
+
+                Ok(Arc::new(DataFrame::new(
+                    vec![Column::new("value".to_string(), ColumnType::String, 0)],
+                    vec![Row::new(vec![TableValue::String(
+                        row.get_row().get_value().clone(),
+                    )])],
+                )))
+            }
+
             _ => Err(CubeError::user(format!("Unsupported SQL: '{}'", query))),
         }
     }
