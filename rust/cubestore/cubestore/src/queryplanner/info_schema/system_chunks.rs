@@ -169,12 +169,7 @@ impl InfoSchemaTableDef for SystemChunksTableDef {
                 Box::new(|chunks| {
                     let min_array = chunks
                         .iter()
-                        .map(|row| {
-                            row.get_row()
-                                .min()
-                                .as_ref()
-                                .map(|x| format!("{:?}", x))
-                        })
+                        .map(|row| row.get_row().min().as_ref().map(|x| format!("{:?}", x)))
                         .collect::<Vec<_>>();
                     Arc::new(StringArray::from(
                         min_array
@@ -189,12 +184,7 @@ impl InfoSchemaTableDef for SystemChunksTableDef {
                 Box::new(|chunks| {
                     let max_array = chunks
                         .iter()
-                        .map(|row| {
-                            row.get_row()
-                                .max()
-                                .as_ref()
-                                .map(|x| format!("{:?}", x))
-                        })
+                        .map(|row| row.get_row().max().as_ref().map(|x| format!("{:?}", x)))
                         .collect::<Vec<_>>();
                     Arc::new(StringArray::from(
                         max_array
