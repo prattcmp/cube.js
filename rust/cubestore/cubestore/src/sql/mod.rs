@@ -1714,6 +1714,7 @@ mod tests {
     use crate::store::ChunkStore;
 
     use super::*;
+    use crate::cachestore::{RocksCacheStore, RocksCacheStoreFs};
     use crate::queryplanner::pretty_printers::pp_phys_plan;
     use crate::remotefs::queue::QueueRemoteFs;
     use crate::scheduler::SchedulerImpl;
@@ -1736,8 +1737,13 @@ mod tests {
                 PathBuf::from(store_path.clone()),
             );
             let meta_store = RocksMetaStore::new(
-                Path::new(path),
+                &Path::new(path).join("metastore"),
                 RocksMetaStoreFs::new(remote_fs.clone()),
+                config.config_obj(),
+            );
+            let cache_store = RocksCacheStore::new(
+                &Path::new(path).join("cachestore"),
+                RocksCacheStoreFs::new(remote_fs.clone()),
                 config.config_obj(),
             );
             let rows_per_chunk = 10;
@@ -1752,6 +1758,7 @@ mod tests {
             let limits = Arc::new(ConcurrencyLimits::new(4));
             let service = SqlServiceImpl::new(
                 meta_store,
+                cache_store,
                 store,
                 limits,
                 Arc::new(MockQueryPlanner::new()),
@@ -1794,8 +1801,13 @@ mod tests {
                 PathBuf::from(store_path.clone()),
             );
             let meta_store = RocksMetaStore::new(
-                Path::new(path),
+                &Path::new(path).join("metastore"),
                 RocksMetaStoreFs::new(remote_fs.clone()),
+                config.config_obj(),
+            );
+            let cache_store = RocksCacheStore::new(
+                &Path::new(path).join("cachestore"),
+                RocksCacheStoreFs::new(remote_fs.clone()),
                 config.config_obj(),
             );
             let rows_per_chunk = 10;
@@ -1810,6 +1822,7 @@ mod tests {
             let limits = Arc::new(ConcurrencyLimits::new(4));
             let service = SqlServiceImpl::new(
                 meta_store.clone(),
+                cache_store,
                 chunk_store,
                 limits,
                 Arc::new(MockQueryPlanner::new()),
@@ -1880,8 +1893,13 @@ mod tests {
                 PathBuf::from(store_path.clone()),
             );
             let meta_store = RocksMetaStore::new(
-                Path::new(path),
+                &Path::new(path).join("metastore"),
                 RocksMetaStoreFs::new(remote_fs.clone()),
+                config.config_obj(),
+            );
+            let cache_store = RocksCacheStore::new(
+                &Path::new(path).join("cachestore"),
+                RocksCacheStoreFs::new(remote_fs.clone()),
                 config.config_obj(),
             );
             let rows_per_chunk = 10;
@@ -1896,6 +1914,7 @@ mod tests {
             let limits = Arc::new(ConcurrencyLimits::new(4));
             let service = SqlServiceImpl::new(
                 meta_store.clone(),
+                cache_store,
                 chunk_store,
                 limits,
                 Arc::new(MockQueryPlanner::new()),
