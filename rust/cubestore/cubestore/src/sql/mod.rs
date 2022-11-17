@@ -1726,11 +1726,10 @@ mod tests {
         let config = Config::test("create_schema_test");
         let path = "/tmp/test_create_schema";
 
-        let _ = DB::destroy(&Options::default(), Path::new(path).join("metastore"));
-        let _ = DB::destroy(&Options::default(), Path::new(path).join("cachestore"));
-
         let store_path = path.to_string() + &"_store".to_string();
         let remote_store_path = path.to_string() + &"remote_store".to_string();
+
+        let _ = fs::remove_dir_all(path.clone());
         let _ = fs::remove_dir_all(store_path.clone());
         let _ = fs::remove_dir_all(remote_store_path.clone());
 
@@ -1787,6 +1786,7 @@ mod tests {
 
         let _ = DB::destroy(&Options::default(), Path::new(path).join("metastore"));
         let _ = DB::destroy(&Options::default(), Path::new(path).join("cachestore"));
+
         let _ = fs::remove_dir_all(store_path.clone());
         let _ = fs::remove_dir_all(remote_store_path.clone());
     }
@@ -1796,13 +1796,13 @@ mod tests {
         let config = Config::test("create_table_test");
         let path = "/tmp/test_create_table";
 
-        let _ = DB::destroy(&Options::default(), Path::new(path).join("metastore"));
-        let _ = DB::destroy(&Options::default(), Path::new(path).join("cachestore"));
-
         let store_path = path.to_string() + &"_store".to_string();
         let remote_store_path = path.to_string() + &"remote_store".to_string();
+
+        let _ = fs::remove_dir_all(path.clone());
         let _ = fs::remove_dir_all(store_path.clone());
         let _ = fs::remove_dir_all(remote_store_path.clone());
+
         {
             let remote_fs = LocalDirRemoteFs::new(
                 Some(PathBuf::from(remote_store_path.clone())),
@@ -1894,13 +1894,13 @@ mod tests {
         let config = Config::test("create_table_test_seal_at");
         let path = "/tmp/test_create_table_seal_at";
 
-        let _ = DB::destroy(&Options::default(), Path::new(path).join("metastore"));
-        let _ = DB::destroy(&Options::default(), Path::new(path).join("cachestore"));
-
         let store_path = path.to_string() + &"_store".to_string();
         let remote_store_path = path.to_string() + &"remote_store".to_string();
+
+        let _ = fs::remove_dir_all(path.clone());
         let _ = fs::remove_dir_all(store_path.clone());
         let _ = fs::remove_dir_all(remote_store_path.clone());
+
         {
             let remote_fs = LocalDirRemoteFs::new(
                 Some(PathBuf::from(remote_store_path.clone())),

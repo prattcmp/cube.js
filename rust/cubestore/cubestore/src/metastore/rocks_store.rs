@@ -399,9 +399,8 @@ impl RocksStore {
         metastore_fs: Arc<dyn MetaStoreFs>,
         config: Arc<dyn ConfigObj>,
         details: Arc<dyn RocksStoreDetails>,
-    ) -> Arc<RocksStore> {
-        let meta_store =
-            RocksStore::with_listener_impl(path, listeners, metastore_fs, config, details);
+    ) -> Arc<Self> {
+        let meta_store = Self::with_listener_impl(path, listeners, metastore_fs, config, details);
         Arc::new(meta_store)
     }
 
@@ -411,7 +410,7 @@ impl RocksStore {
         metastore_fs: Arc<dyn MetaStoreFs>,
         config: Arc<dyn ConfigObj>,
         details: Arc<dyn RocksStoreDetails>,
-    ) -> RocksStore {
+    ) -> Self {
         let db = details.open_db(path).unwrap();
         let db_arc = Arc::new(db);
 
@@ -457,7 +456,7 @@ impl RocksStore {
         metastore_fs: Arc<dyn MetaStoreFs>,
         config: Arc<dyn ConfigObj>,
         details: Arc<dyn RocksStoreDetails>,
-    ) -> Arc<RocksStore> {
+    ) -> Arc<Self> {
         Self::with_listener(path, vec![], metastore_fs, config, details)
     }
 
@@ -467,7 +466,7 @@ impl RocksStore {
         metastore_fs: Arc<dyn MetaStoreFs>,
         config: Arc<dyn ConfigObj>,
         details: Arc<dyn RocksStoreDetails>,
-    ) -> Result<Arc<RocksStore>, CubeError> {
+    ) -> Result<Arc<Self>, CubeError> {
         if !fs::metadata(path).await.is_ok() {
             let mut backup =
                 rocksdb::backup::BackupEngine::open(&BackupEngineOptions::default(), dump_path)?;
