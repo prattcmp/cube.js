@@ -1000,7 +1000,7 @@ impl RocksStoreDetails for RocksMetaStoreDetails {
             .map_err(|err| CubeError::internal(format!("DB::open error for metastore: {}", err)))
     }
 
-    fn migrate<'a>(&self, table_ref: DbTableRef<'a>) -> Result<(), CubeError> {
+    fn migrate(&self, table_ref: DbTableRef) -> Result<(), CubeError> {
         SchemaRocksTable::new(table_ref.clone()).check_indexes()?;
         TableRocksTable::new(table_ref.clone()).check_indexes()?;
         IndexRocksTable::new(table_ref.clone()).check_indexes()?;

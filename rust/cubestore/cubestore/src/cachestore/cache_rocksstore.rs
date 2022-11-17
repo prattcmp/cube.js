@@ -32,7 +32,7 @@ impl RocksStoreDetails for RocksCacheStoreDetails {
             .map_err(|err| CubeError::internal(format!("DB::open error for cachestore: {}", err)))
     }
 
-    fn migrate<'a>(&self, table_ref: DbTableRef<'a>) -> Result<(), CubeError> {
+    fn migrate(&self, table_ref: DbTableRef) -> Result<(), CubeError> {
         CacheItemRocksTable::new(table_ref.clone()).check_indexes()?;
 
         Ok(())
