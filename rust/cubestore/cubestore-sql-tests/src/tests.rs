@@ -6170,32 +6170,18 @@ async fn build_range_end(service: Box<dyn SqlClient>) {
 async fn cache_incr(service: Box<dyn SqlClient>) {
     let query = r#"CACHE INCR "prefix:key""#;
 
-    let r = service
-        .exec_query(query.clone())
-        .await
-        .unwrap();
+    let r = service.exec_query(query.clone()).await.unwrap();
 
     assert_eq!(
         r.get_rows(),
-        &vec![
-            Row::new(vec![
-                TableValue::String("1".to_string()),
-            ]),
-        ]
+        &vec![Row::new(vec![TableValue::String("1".to_string()),]),]
     );
 
-    let r = service
-        .exec_query(query)
-        .await
-        .unwrap();
+    let r = service.exec_query(query).await.unwrap();
 
     assert_eq!(
         r.get_rows(),
-        &vec![
-            Row::new(vec![
-                TableValue::String("2".to_string()),
-            ]),
-        ]
+        &vec![Row::new(vec![TableValue::String("2".to_string()),]),]
     );
 }
 

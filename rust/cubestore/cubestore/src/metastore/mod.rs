@@ -996,7 +996,8 @@ impl RocksStoreDetails for RocksMetaStoreDetails {
         opts.set_prefix_extractor(rocksdb::SliceTransform::create_fixed_prefix(13));
         opts.set_merge_operator_associative("meta_store merge", meta_store_merge);
 
-        Ok(DB::open(&opts, path).unwrap())
+        DB::open(&opts, path)
+            .map_err(|err| CubeError::internal(format!("DB::open error for metastore: {}", err)))
     }
 
     fn migrate<'a>(&self, table_ref: DbTableRef<'a>) -> Result<(), CubeError> {

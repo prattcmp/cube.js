@@ -28,7 +28,8 @@ impl RocksStoreDetails for RocksCacheStoreDetails {
         opts.create_if_missing(true);
         opts.set_prefix_extractor(rocksdb::SliceTransform::create_fixed_prefix(13));
 
-        Ok(DB::open(&opts, path).unwrap())
+        DB::open(&opts, path)
+            .map_err(|err| CubeError::internal(format!("DB::open error for cachestore: {}", err)))
     }
 
     fn migrate<'a>(&self, table_ref: DbTableRef<'a>) -> Result<(), CubeError> {
