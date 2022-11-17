@@ -987,7 +987,7 @@ fn meta_store_merge(
     Some(result)
 }
 
-pub struct RocksMetaStoreDetails {}
+struct RocksMetaStoreDetails {}
 
 impl RocksStoreDetails for RocksMetaStoreDetails {
     fn open_db(&self, path: &Path) -> Result<DB, CubeError> {

@@ -20,7 +20,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::broadcast::Sender;
 
-pub struct RocksCacheStoreDetails {}
+struct RocksCacheStoreDetails {}
 
 impl RocksStoreDetails for RocksCacheStoreDetails {
     fn open_db(&self, path: &Path) -> Result<DB, CubeError> {
