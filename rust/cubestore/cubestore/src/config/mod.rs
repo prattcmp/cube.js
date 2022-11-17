@@ -2,7 +2,7 @@
 pub mod injection;
 pub mod processing_loop;
 
-use crate::cachestore::{CacheStore, RocksCacheStore, RocksCacheStoreFs};
+use crate::cachestore::{CacheStore, ClusterCacheStoreClient, RocksCacheStore, RocksCacheStoreFs};
 use crate::cluster::transport::{
     ClusterTransport, ClusterTransportImpl, MetaStoreTransport, MetaStoreTransportImpl,
 };
@@ -1143,38 +1143,48 @@ impl Config {
                 .await;
         };
 
-        self.injector
-            .register("cachestore_fs", async move |i| {
-                // TODO metastore works with non queue remote fs as it requires loops to be started prior to load_from_remote call
-                let original_remote_fs = i.get_service("original_remote_fs").await;
-                let arc: Arc<dyn DIService> = RocksCacheStoreFs::new(original_remote_fs);
+        if uses_remote_metastore(&self.injector).await {
+            self.injector
+                .register_typed::<dyn CacheStore, _, _, _>(async move |_| {
+                    Arc::new(ClusterCacheStoreClient {})
+                })
+                .await;
+        } else {
+            self.injector
+                .register("cachestore_fs", async move |i| {
+                    // TODO metastore works with non queue remote fs as it requires loops to be started prior to load_from_remote call
+                    let original_remote_fs = i.get_service("original_remote_fs").await;
+                    let arc: Arc<dyn DIService> = RocksCacheStoreFs::new(original_remote_fs);
 
-                arc
-            })
-            .await;
-        let path = self.cache_store_path().to_str().unwrap().to_string();
-        self.injector
-            .register_typed_with_default::<dyn CacheStore, RocksCacheStore, _, _>(async move |i| {
-                let config = i.get_service_typed::<dyn ConfigObj>().await;
-                let cachestore_fs = i.get_service("cachestore_fs").await;
-                let cache_store = if let Some(dump_dir) = config.clone().dump_dir() {
-                    RocksCacheStore::load_from_dump(
-                        &Path::new(&path),
-                        dump_dir,
-                        cachestore_fs,
-                        config,
-                    )
-                    .await
-                    .unwrap()
-                } else {
-                    RocksCacheStore::load_from_remote(&path, cachestore_fs, config)
-                        .await
-                        .unwrap()
-                };
+                    arc
+                })
+                .await;
+            let path = self.cache_store_path().to_str().unwrap().to_string();
+            self.injector
+                .register_typed_with_default::<dyn CacheStore, RocksCacheStore, _, _>(
+                    async move |i| {
+                        let config = i.get_service_typed::<dyn ConfigObj>().await;
+                        let cachestore_fs = i.get_service("cachestore_fs").await;
+                        let cache_store = if let Some(dump_dir) = config.clone().dump_dir() {
+                            RocksCacheStore::load_from_dump(
+                                &Path::new(&path),
+                                dump_dir,
+                                cachestore_fs,
+                                config,
+                            )
+                            .await
+                            .unwrap()
+                        } else {
+                            RocksCacheStore::load_from_remote(&path, cachestore_fs, config)
+                                .await
+                                .unwrap()
+                        };
 
-                cache_store
-            })
-            .await;
+                        cache_store
+                    },
+                )
+                .await;
+        }
 
         self.injector
             .register_typed::<dyn WALDataStore, _, _, _>(async move |i| {

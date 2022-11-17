@@ -205,6 +205,17 @@ impl CacheStore for RocksCacheStore {
 crate::di_service!(RocksCacheStore, [CacheStore]);
 crate::di_service!(CacheStoreRpcClient, [CacheStore]);
 
+pub struct ClusterCacheStoreClient {}
+
+#[async_trait]
+impl CacheStore for ClusterCacheStoreClient {
+    async fn cache_incr(&self, _: String) -> Result<IdRow<CacheItem>, CubeError> {
+        panic!("CacheStore cannot be used on the worker node! cache_incr was used.")
+    }
+}
+
+crate::di_service!(ClusterCacheStoreClient, [CacheStore]);
+
 #[cfg(test)]
 mod tests {
     use crate::cachestore::*;
